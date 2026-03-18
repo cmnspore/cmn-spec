@@ -443,7 +443,30 @@ Spore A
 - Popular spores (in inventories or bond chains) are preserved
 - Mycelial structure keeps important content alive
 
-## 6. Summary
+## 6. Protocol Versioning
+
+The protocol version lives in the `$schema` URL path, for example `https://cmn.dev/schemas/v1/spore.json`. All CMN schema documents for a given release share the same version segment.
+
+### 6.1 Version Negotiation
+
+Domains MAY advertise supported protocol versions in `cmn.json`:
+
+```json
+{
+  "protocol_versions": ["v1"],
+  "capsules": [...]
+}
+```
+
+Consumers SHOULD use the highest mutually-supported version. If `protocol_versions` is absent, consumers MUST assume `["v1"]`.
+
+### 6.2 Migration Rules
+
+1. **Major version** (`v1` → `v2`): Breaking changes. Consumers MUST support both versions during a transition period of at least 12 months. Domains SHOULD publish under both versions concurrently.
+2. **Minor additions**: New optional fields within the same major version. Consumers MUST ignore unknown fields. Producers MUST NOT require consumers to understand new optional fields for correct operation.
+3. **Deprecation**: Fields marked deprecated in one major version MAY be removed in the next. Implementations SHOULD log warnings when deprecated fields are encountered.
+
+## 7. Summary
 
 **CMN is a domain-sovereign network:**
 - Each domain is independent and self-governing

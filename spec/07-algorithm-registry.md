@@ -43,3 +43,11 @@ Adding a new optional algorithm identifier is non-breaking when existing identif
 Removing support for an active identifier is a breaking change.
 
 New identifiers SHOULD be documented here before production use.
+
+### 4.1 Algorithm Migration
+
+When new algorithms are added to the registry:
+
+1. New algorithm is added with status **active**.
+2. Old algorithm status changes to **deprecated** — consumers SHOULD warn on use.
+3. After a transition period, old algorithm status changes to **retired** — consumers MAY reject content using retired algorithms.
