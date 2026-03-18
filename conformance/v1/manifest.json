@@ -1,0 +1,11 @@
+{
+  "version": "cmn-conformance-v1",
+  "vectors": {
+    "signature": "vectors/signature.json",
+    "uri": "vectors/uri.json",
+    "merkle": "vectors/merkle.json",
+    "capsule": "vectors/capsule.json",
+    "taste": "vectors/taste.json",
+    "key_rotation": "vectors/key_rotation.json"
+  }
+}

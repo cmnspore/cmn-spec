@@ -1,0 +1,150 @@
+{
+  "$id": "https://cmn.dev/schemas/v1/cmn.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CMN Domain Entry Point",
+  "type": "object",
+  "required": ["$schema", "capsules", "capsule_signature"],
+  "properties": {
+    "$schema": {
+      "const": "https://cmn.dev/schemas/v1/cmn.json"
+    },
+    "capsules": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/capsule_entry" },
+      "description": "First entry is this host domain's own capsule; additional entries MAY describe mirrored origin domains."
+    },
+    "protocol_versions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^v[0-9]+$"
+      },
+      "minItems": 1,
+      "uniqueItems": true,
+      "description": "Protocol versions supported by this domain (e.g. [\"v1\"]). If absent, consumers MUST assume [\"v1\"]."
+    },
+    "capsule_signature": {
+      "$ref": "#/$defs/signature",
+      "description": "Signature over the capsules array, verified with capsules[0].key"
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "capsule_entry": {
+      "type": "object",
+      "required": ["uri", "key", "mycelium_hash", "endpoints"],
+      "properties": {
+        "uri": {
+          "type": "string",
+          "pattern": "^cmn://(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+          "description": "Domain URI of the capsule origin: cmn://{origin_domain}"
+        },
+        "key": {
+          "type": "string",
+          "pattern": "^ed25519\\.[1-9A-HJ-NP-Za-km-z]+$",
+          "description": "Ed25519 public key of the entry's origin domain in {algorithm}.{base58} format"
+        },
+        "previous_keys": {
+          "type": "array",
+          "description": "Optional retired keys for verifying historical content signed before key rotation",
+          "items": { "$ref": "#/$defs/previous_key" }
+        },
+        "mycelium_hash": {
+          "$ref": "#/$defs/content_hash",
+          "description": "Content hash of the mycelium manifest for this entry"
+        },
+        "endpoints": { "$ref": "#/$defs/endpoints" }
+      },
+      "additionalProperties": true
+    },
+    "domain": {
+      "type": "string",
+      "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+      "description": "Lowercase RFC1123 fully-qualified domain name"
+    },
+    "previous_key": {
+      "type": "object",
+      "required": ["key", "retired_at_epoch_ms"],
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^ed25519\\.[1-9A-HJ-NP-Za-km-z]+$",
+          "description": "Retired Ed25519 public key in {algorithm}.{base58} format"
+        },
+        "retired_at_epoch_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "When this key was retired (milliseconds since Unix epoch)"
+        }
+      },
+      "additionalProperties": true
+    },
+    "content_hash": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+\\.[1-9A-HJ-NP-Za-km-z]+$",
+      "description": "Content hash with algorithm prefix (e.g., b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2)"
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+\\.[1-9A-HJ-NP-Za-km-z]+$",
+      "description": "Signature format: {algorithm}.{base58}, e.g., ed25519.3yMR7vZQ9hL2xKJd..."
+    },
+    "archive_format": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9+._-]*$",
+      "description": "Archive transport format identifier. Clients MUST select decoders by this field, not by filename suffix."
+    },
+    "archive_endpoint": {
+      "type": "object",
+      "required": ["format", "url"],
+      "properties": {
+        "format": {
+          "$ref": "#/$defs/archive_format",
+          "description": "Full-archive format identifier, e.g. tar+zstd or tar+gzip"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "\\{filename\\}",
+          "description": "Template URL for this archive format. MUST include {filename}, e.g. https://example.com/cmn/archive/{filename}"
+        },
+        "delta_url": {
+          "type": "string",
+          "pattern": "(?=.*\\{hash\\})(?=.*\\{old_hash\\})",
+          "description": "Optional template URL for archive deltas for this format. MUST include {hash} (target/new hash) and {old_hash} (cached base hash). Direction is old_hash -> hash."
+        }
+      },
+      "additionalProperties": true
+    },
+    "archive_endpoint_array": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/archive_endpoint" },
+      "description": "Ordered archive format candidates. Each entry MAY define a same-format delta_url. Clients SHOULD try in listed order and fall back as needed."
+    },
+    "endpoints": {
+      "type": "object",
+      "required": ["mycelium", "spore", "archive"],
+      "properties": {
+        "mycelium": {
+          "type": "string",
+          "pattern": "\\{hash\\}",
+          "description": "Template URL for fetching mycelium, e.g. https://example.com/cmn/mycelium/{hash}.json"
+        },
+        "spore": {
+          "type": "string",
+          "pattern": "\\{hash\\}",
+          "description": "Template URL for fetching spores, e.g. https://example.com/cmn/spore/{hash}.json"
+        },
+        "archive": { "$ref": "#/$defs/archive_endpoint_array" },
+        "taste": {
+          "type": "string",
+          "pattern": "\\{hash\\}",
+          "description": "Template URL for fetching taste reports, e.g. https://example.com/cmn/taste/{hash}.json"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

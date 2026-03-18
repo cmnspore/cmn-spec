@@ -1,0 +1,39 @@
+{
+  "$schema": "https://cmn.dev/schemas/v1/spore-core.json",
+  "id": "cmn-spec",
+  "name": "Code Mycelial Network Specification",
+  "version": "1.0.0",
+  "domain": "cmn.dev",
+  "key": "ed25519.7BmCWmBb2YeUWR7pmHvwAvi9wRm96VpZsJvZFSTfc2Uu",
+  "synopsis": "Code Mycelial Network (CMN) specification — normative documents, JSON schemas, and conformance test vectors for sovereign code distribution",
+  "intent": [
+    "Provide the complete normative specification for the Code Mycelial Network protocol — seven chapters covering Substrate (discovery & identity), Mycelium (domain manifest), Spore (package format), Taste (safety evaluation), Strain (conventions), URI (addressing), and Algorithm Registry",
+    "Ship machine-readable JSON Schema definitions (cmn.json, mycelium.json, spore-core.json, spore.json, taste.json) for validating all protocol artifacts, plus conformance test vectors (merkle, signature, uri, capsule, taste gating, key rotation, bond traversal) so implementers can verify correctness without reading prose"
+  ],
+  "mutations": [
+    "Add comprehensive README with protocol overview, specification document index, JSON schema links, and conformance vector summary",
+    "Rewrite spore.core.json — rename to Code Mycelial Network Specification, rewrite synopsis and intent to describe the spec package itself rather than repeating protocol details"
+  ],
+  "license": "CC0-1.0",
+  "bonds": [
+    {
+      "relation": "spawned_from",
+      "uri": "cmn://cmn.dev/b3.9WbETnHuvYUVQpUsvg7rwUdCX3bxLnsgzPQBoadTuZLJ"
+    },
+    {
+      "relation": "follows",
+      "uri": "cmn://cmn.dev/b3.6kdwoYeoB3GbKVFB4NnKUfHtuuNttHLpaf9nYgtMHhf6",
+      "id": "agent-first-data",
+      "reason": "Uses agent-first-data naming conventions for all field names (e.g., updated_at_epoch_ms, cost_msats, created_at_epoch_s)"
+    }
+  ],
+  "tree": {
+    "algorithm": "blob_tree_blake3_nfc",
+    "exclude_names": [
+      ".git"
+    ],
+    "follow_rules": [
+      ".gitignore"
+    ]
+  }
+}
