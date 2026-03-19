@@ -6,7 +6,7 @@ The **Mycelium** is a **Site Descriptor**. It represents a developer or organiza
 
 The domain entry point (`cmn.json`) is documented in [01-substrate.md](./01-substrate.md#1-2-1-domain-entry-point-cmn-json). This document covers the full mycelium manifest that contains the complete site metadata.
 
-**Location:** Defined by `capsules[].endpoints.mycelium` in `cmn.json` (e.g., `https://cmn.dev/cmn/mycelium/{hash}.json`)
+**Location:** Defined by the `type: "mycelium"` endpoint in `cmn.json` (e.g., `https://cmn.dev/cmn/mycelium/{hash}.json`)
 **Schema:** `https://cmn.dev/schemas/v1/mycelium.json`
 **Size:** ~1-10 KB
 
@@ -42,7 +42,7 @@ The domain entry point (`cmn.json`) is documented in [01-substrate.md](./01-subs
 }
 ```
 
-**Note:** Content endpoints (`spore`, `archive[]`, optional `taste`) are defined in `cmn.json` capsule entries, not in the mycelium manifest. See [01-substrate §1.2.1](./01-substrate.md#1-2-1-domain-entry-point-cmn-json).
+**Note:** Content endpoints (`spore`, `archive`, `taste`) are defined in the `cmn.json` endpoint array, not in the mycelium manifest. See [01-substrate §1.2.1](./01-substrate.md#1-2-1-domain-entry-point-cmn-json).
 
 ## 2. Field Definitions
 
@@ -149,7 +149,7 @@ The hash in `capsule.uri` is calculated from `core` + `core_signature`:
 1. Construct hash input: `{"core": <core>, "core_signature": "<signature>"}`
 2. Serialize hash input using JCS
 3. Hash with BLAKE3 → `b3.<base58>`
-4. The mycelium URI is `cmn://{domain}/mycelium/{hash}` (the hash is also stored in `cmn.json` as `capsules[0].mycelium_hash` for change detection)
+4. The mycelium URI is `cmn://{domain}/mycelium/{hash}` (the hash is also stored in `cmn.json` as the `hash` field on the `type: "mycelium"` endpoint for change detection)
 
 **Key Properties:**
 - Changing any core field (name, synopsis, spores) changes the hash
@@ -183,7 +183,7 @@ All signatures and hashes use JCS (see [01-substrate §1.3](./01-substrate.md#1-
 5. Build `capsule` with uri, core, core_signature
 6. Sign capsule → `capsule_signature`
 7. Save full mycelium to `/cmn/mycelium/{hash}.json`
-8. Generate cmn.json capsule entry with mycelium_hash and endpoints
+8. Generate cmn.json capsule entry with endpoints (including `type: "mycelium"` with `hash`)
 9. Sign cmn.json capsules array → `capsule_signature`
 10. Save to `cmn.json`
 
@@ -207,15 +207,15 @@ site_root/
 
 ### 7.1 Hash Lookup
 
-The mycelium hash is stored in `cmn.json` as `capsules[0].mycelium_hash`. Use this value from the domain entry point for change detection and content verification.
+The mycelium hash is stored in `cmn.json` as the `hash` field on the `type: "mycelium"` endpoint entry. Use this value from the domain entry point for change detection and content verification.
 
 ### 7.2 Mycelium Resolution
 
 When fetching the full mycelium content:
 
-Use `capsules[0].endpoints.mycelium` template from `cmn.json`:
-- Take `capsules[0].mycelium_hash`
-- Replace `{hash}` in template
+Find the `type: "mycelium"` endpoint in `capsules[0].endpoints`:
+- Take its `hash` field
+- Replace `{hash}` in the endpoint's `url` template
 - Example:
   - Hash = `b3.3yMR7vZQ9hL2x...pTa2`
   - URL = `https://cmn.dev/cmn/mycelium/b3.3yMR7vZQ9hL2x...pTa2.json`
@@ -226,10 +226,10 @@ If endpoints are missing, return an error - there are no default fallback URLs.
 
 When a client needs to fetch a specific spore:
 
-Use `capsules[0].endpoints.spore` template from `cmn.json`:
-- Replace `{hash}` with the spore hash
+Find the `type: "spore"` endpoint in `capsules[0].endpoints`:
+- Replace `{hash}` in the endpoint's `url` template with the spore hash
 
-Resolution flow: cmn.json → use `capsules[0].endpoints.spore` → fetch spore.
+Resolution flow: cmn.json → find `type: "spore"` endpoint → fetch spore.
 
 If endpoints are missing, return an error. Synapse is only used as a **backup** when the domain is unreachable, not as a default endpoint.
 
@@ -270,25 +270,19 @@ Publishing implementations MAY send a Pulse notification to registered Synapse i
     {
       "uri": "cmn://cmn.dev",
       "key": "ed25519.5XmkQ9vZP8nL3xJdFtR7wNcA6sY2bKgU1eH9pXb4",
-      "mycelium_hash": "b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
-      "endpoints": {
-        "mycelium": "https://cmn.dev/cmn/mycelium/{hash}.json",
-        "spore": "https://cmn.dev/cmn/spore/{hash}.json",
-        "archive": [
-          {
-            "format": "tar+zstd",
-            "url": "https://cmn.dev/cmn/archive/{filename}",
-            "delta_url": "https://cmn.dev/cmn/archive/delta/{hash}/{old_hash}.zdict"
-          }
-        ]
-      }
+      "endpoints": [
+        {"type": "mycelium", "url": "https://cmn.dev/cmn/mycelium/{hash}.json", "hash": "b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"},
+        {"type": "spore",    "url": "https://cmn.dev/cmn/spore/{hash}.json"},
+        {"type": "archive",  "url": "https://cmn.dev/cmn/archive/{hash}.tar.zst", "format": "tar+zstd"},
+        {"type": "taste",    "url": "https://cmn.dev/cmn/taste/{hash}.json"}
+      ]
     }
   ],
   "capsule_signature": "ed25519.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa23yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"
 }
 ```
 
-**Client resolution:** Take `capsules[0].mycelium_hash`, replace `{hash}` in `capsules[0].endpoints.mycelium` template → fetch full mycelium.
+**Client resolution:** Find the `type: "mycelium"` endpoint, take its `hash`, replace `{hash}` in its `url` template → fetch full mycelium.
 
 **Full (`/cmn/mycelium/b3.3yMR7vZQ9hL2x...pTa2.json`):**
 ```json

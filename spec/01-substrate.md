@@ -28,7 +28,7 @@ The **Code Mycelial Network (CMN)** is a **domain-sovereign, distributed network
 Every CMN domain publishes a `cmn.json` file at the domain root. This lightweight entry point (~200 bytes) serves two purposes:
 
 1. **Identity Verification**: Provides `key` — the domain's Ed25519 public key, authenticated by the transport layer (e.g., HTTPS with TLS certificate)
-2. **Efficient Change Detection**: Contains a hash reference to the full mycelium manifest
+2. **Content Discovery**: Typed endpoint array declares where to fetch mycelium, spores, archives, and taste reports
 
 **Location:** `https://{domain}/.well-known/cmn.json`
 
@@ -49,18 +49,13 @@ Using `.well-known` makes CMN discoverable via standard Web infrastructure, comp
     {
       "uri": "cmn://cmn.dev",
       "key": "ed25519.5XmkQ9vZP8nL3xJdFtR7wNcA6sY2bKgU1eH9pXb4",
-      "mycelium_hash": "b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
-      "endpoints": {
-        "mycelium": "https://cmn.dev/cmn/mycelium/{hash}.json",
-        "spore": "https://cmn.dev/cmn/spore/{hash}.json",
-        "archive": [
-          {
-            "format": "tar+zstd",
-            "url": "https://cmn.dev/cmn/archive/{filename}",
-            "delta_url": "https://cmn.dev/cmn/archive/delta/{hash}/{old_hash}.zdict"
-          }
-        ]
-      }
+      "endpoints": [
+        {"type": "mycelium", "url": "https://cmn.dev/cmn/mycelium/{hash}.json", "hash": "b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"},
+        {"type": "spore",    "url": "https://cmn.dev/cmn/spore/{hash}.json"},
+        {"type": "archive",  "url": "https://cmn.dev/cmn/archive/{hash}.tar.zst", "format": "tar+zstd",
+                             "delta_url": "https://cmn.dev/cmn/archive/{hash}.from.{old_hash}.tar.zst"},
+        {"type": "taste",    "url": "https://cmn.dev/cmn/taste/{hash}.json"}
+      ]
     }
   ],
   "capsule_signature": "ed25519.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa23yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"
@@ -72,26 +67,35 @@ Using `.well-known` makes CMN discoverable via standard Web infrastructure, comp
 | Field | Type | Description |
 |-------|------|-------------|
 | `$schema` | String | Schema URL: `https://cmn.dev/schemas/v1/cmn.json` |
-| `capsules` | Array | Array of capsule entries. First entry (`capsules[0]`) is the domain's own mycelium; additional entries are replicated mycelia from other domains. |
+| `capsules` | Array | Array of capsule entries. First entry (`capsules[0]`) is the domain's own capsule; additional entries are replicated capsules from other domains. |
 | `capsules[].uri` | String | Domain URI of the capsule origin: `cmn://{origin_domain}`. The first entry (`capsules[0]`) is always this host domain. |
 | `capsules[].key` | String | Ed25519 public key of the entry's origin domain in `{algorithm}.{base58}` format. |
 | `capsules[].previous_keys` | Array? | Optional. Retired public keys for verifying historical content (see [§1.2.3](#1-2-3-key-rotation)). |
-| `capsules[].mycelium_hash` | String | Content hash of the mycelium manifest for this entry. |
-| `capsules[].endpoints` | Object | Endpoint definitions: `mycelium`, `spore`, `archive[]`, and optional `taste`. |
+| `capsules[].endpoints` | Array? | Optional typed array of endpoint definitions. Each entry has a `type` field (`mycelium`, `spore`, `archive`, `taste`, or extension types). Taste-only domains MAY omit endpoints entirely. |
 | `capsule_signature` | String | Ed25519 signature of the `capsules` array, verified with `capsules[0].key` (format: `ed25519.<base58>`, JCS canonical). |
 
-The `key` is inside each capsule entry, so the `capsule_signature` covers the key binding — all entries, their public keys, endpoints, and mycelium hashes are signed together as a single authorized unit.
+**Endpoint types:**
 
-**Note:** Each capsule entry in `cmn.json` contains endpoint definitions (`mycelium`, `spore`, `archive[]`, optional `taste`). Replicators can add additional capsule entries with different endpoints while preserving the original entry.
+| Type | Required fields | Description |
+|------|----------------|-------------|
+| `mycelium` | `url`, `hash` | Mycelium manifest. `hash` is the current mycelium content hash for change detection. `url` template includes `{hash}`. |
+| `spore` | `url` | Spore manifests. `url` template includes `{hash}`. |
+| `archive` | `url`, `format` | Archive downloads. `url` template includes `{hash}` (the template itself carries the file extension). Optional `delta_url` includes `{hash}` and `{old_hash}`. Multiple archive entries with different formats are allowed. |
+| `taste` | `url` | Taste reports. `url` template includes `{hash}`. |
+
+The `key` is inside each capsule entry, so the `capsule_signature` covers the key binding — all entries, their public keys, and endpoints are signed together as a single authorized unit.
+
+**Note:** Endpoints use a uniform typed-array pattern (same as `dist` in spores and `nutrients` in mycelium). Replicators can add additional capsule entries with different endpoints while preserving the original entry.
 
 **Resolution Flow:**
 
 ```
 1. Download cmn.json
-2. Compare capsules[0].mycelium_hash with cached hash
-3. If same → Skip download (efficient)
-4. If different → Download full mycelium using capsules[0].endpoints.mycelium template
-5. Resolve spore/archive/taste endpoints from the same `cmn.json` capsule entry
+2. Find endpoint with type "mycelium" in capsules[0].endpoints
+3. Compare mycelium endpoint's hash with cached hash
+4. If same → Skip download (efficient)
+5. If different → Download full mycelium using the endpoint's url template
+6. Resolve spore/archive/taste by finding the matching type in endpoints
 ```
 
 **HTTPS Security Model:**
@@ -129,18 +133,12 @@ Domains MAY rotate their Ed25519 key at any time by updating `cmn.json` with a n
       "previous_keys": [
         { "key": "ed25519.OLD_KEY_BASE58", "retired_at_epoch_ms": 1772000000000 }
       ],
-      "mycelium_hash": "b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
-      "endpoints": {
-        "mycelium": "https://example.com/cmn/mycelium/{hash}.json",
-        "spore": "https://example.com/cmn/spore/{hash}.json",
-        "archive": [
-          {
-            "format": "tar+zstd",
-            "url": "https://example.com/cmn/archive/{filename}",
-            "delta_url": "https://example.com/cmn/archive/delta/{hash}/{old_hash}.zdict"
-          }
-        ]
-      }
+      "endpoints": [
+        {"type": "mycelium", "url": "https://example.com/cmn/mycelium/{hash}.json", "hash": "b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"},
+        {"type": "spore",    "url": "https://example.com/cmn/spore/{hash}.json"},
+        {"type": "archive",  "url": "https://example.com/cmn/archive/{hash}.tar.zst", "format": "tar+zstd"},
+        {"type": "taste",    "url": "https://example.com/cmn/taste/{hash}.json"}
+      ]
     }
   ],
   "capsule_signature": "ed25519.SIGNED_WITH_NEW_KEY"
@@ -272,7 +270,7 @@ The URI is the **primary key** for all entities:
 **Properties:**
 - Domain identifies the publisher (or taster, for taste reports)
 - Hash ensures content integrity (content-addressed)
-- Use `capsules[0].mycelium_hash` in `cmn.json` for change detection
+- Use the `hash` field on the `type: "mycelium"` endpoint in `cmn.json` for change detection
 
 For detailed URI specification, see [06-uri.md](./06-uri.md).
 
@@ -298,28 +296,22 @@ For detailed URI specification, see [06-uri.md](./06-uri.md).
 
 ### 3.1 Multi-Source Distribution
 
-Each capsule entry in `cmn.json` contains endpoint definitions (`mycelium`, `spore`, `archive[]`, optional `taste`). Replicators can add additional capsule entries with different hosting endpoints.
+Each capsule entry in `cmn.json` contains a typed endpoint array. Replicators can add additional capsule entries with different hosting endpoints.
 
 ```json
-// cmn.json — all endpoints per capsule entry
+// cmn.json — endpoints per capsule entry
 {
   "capsules": [
     {
       "uri": "cmn://example.com",
       "key": "ed25519...",
-      "mycelium_hash": "b3...",
-      "endpoints": {
-        "mycelium": "https://cdn.example.com/cmn/mycelium/{hash}.json",
-        "spore": "https://cdn.example.com/cmn/spore/{hash}.json",
-        "archive": [
-          {
-            "format": "tar+zstd",
-            "url": "https://cdn.example.com/cmn/archive/{filename}",
-            "delta_url": "https://cdn.example.com/cmn/archive/delta/{hash}/{old_hash}.zdict"
-          }
-        ],
-        "taste": "https://cdn.example.com/cmn/taste/{hash}.json"
-      }
+      "endpoints": [
+        {"type": "mycelium", "url": "https://cdn.example.com/cmn/mycelium/{hash}.json", "hash": "b3..."},
+        {"type": "spore",    "url": "https://cdn.example.com/cmn/spore/{hash}.json"},
+        {"type": "archive",  "url": "https://cdn.example.com/cmn/archive/{hash}.tar.zst", "format": "tar+zstd",
+                             "delta_url": "https://cdn.example.com/cmn/archive/{hash}.from.{old_hash}.tar.zst"},
+        {"type": "taste",    "url": "https://cdn.example.com/cmn/taste/{hash}.json"}
+      ]
     }
   ]
 }
@@ -347,11 +339,11 @@ Spores can reference multiple source locations:
 ```
 
 **Supported Protocols:**
-- **Archive (`type=archive`)**: `filename` resolved via `endpoints.archive[].url` (default)
+- **Archive (`type=archive`)**: Resolved via the `type: "archive"` endpoint's `url` template in `cmn.json`, replacing `{hash}` with the spore hash (default)
 - **Git (`type=git`)**: `url` + optional `ref` for full history/context
 - **IPFS (`type=ipfs`)**: `cid` for immutable content addressing
 
-**Incremental behavior:** `git` and optional `endpoints.archive[].delta_url` provide incremental transfer paths. `delta_url` is endpoint-level discovery (not a separate dist entry). It MUST include `{hash}` (target hash) and `{old_hash}` (cached base hash); direction is always `old_hash -> hash`. Implementations SHOULD fall back to full `archive` when delta prerequisites are unavailable.
+**Incremental behavior:** `git` and optional `delta_url` on archive endpoints provide incremental transfer paths. `delta_url` is endpoint-level discovery (not a separate dist entry). It MUST include `{hash}` (target hash) and `{old_hash}` (cached base hash); direction is always `old_hash -> hash`. Implementations SHOULD fall back to full `archive` when delta prerequisites are unavailable.
 
 The protocol does not require filename-suffix parsing for format detection. Clients MUST use `archive[].format` to choose decoders. In current Hypha releases, only `tar+zstd` is generated.
 

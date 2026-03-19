@@ -2,7 +2,7 @@
 
 The **Spore** is a **Logic Capsule**. It relies on its URI for identity and carries the logic DNA.
 
-**Location:** Defined by `capsules[].endpoints.spore` in `cmn.json` (e.g., `https://cmn.dev/cmn/spore/{hash}.json`)
+**Location:** Defined by the `type: "spore"` endpoint in `cmn.json` (e.g., `https://cmn.dev/cmn/spore/{hash}.json`)
 **Schema:** `https://cmn.dev/schemas/v1/spore.json`
 
 ## 1. The `spore.json` Manifest
@@ -36,10 +36,7 @@ The **Spore** is a **Logic Capsule**. It relies on its URI for identity and carr
     },
     "core_signature": "ed25519.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa23yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
     "dist": [
-      {
-        "type": "archive",
-        "filename": "cmn-spec.tar.zst"
-      }
+      { "type": "archive" }
     ]
   },
   "capsule_signature": "ed25519.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa23yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"
@@ -97,19 +94,19 @@ The following fields are **optional** and not required by the protocol. When pre
 | `capsule.dist` | Array | Physical source locations (e.g., `git`, `ipfs`). Replicate-friendly. MUST contain at least one entry. |
 
 Each `dist` entry MUST be one of:
-- `{ "type": "archive", "filename": "<filename>" }`
+- `{ "type": "archive" }` — archive download, resolved via `cmn.json` endpoints
 - `{ "type": "git", "url": "<url>", "ref"?: "<ref>" }`
 - `{ "type": "ipfs", "cid": "<cid-or-uri>" }`
 - `{ "type": "<extension>", ... }` (protocol extension entry)
 
-The first three are built-in v1 entries. `archive` uses endpoint indirection: `filename` is resolved through `cmn.json` `endpoints.archive[].url`. For future protocols, use the extension form with a `type` field (for example, `{ "type": "s3", "url": "..." }`). Consumers that do not understand an extension `type` MAY skip that entry and continue trying other `dist` entries.
+The first three are built-in v1 entries. `archive` uses endpoint indirection: the spore's hash is resolved through the `type: "archive"` endpoint's `url` template in `cmn.json` (e.g., `https://example.com/cmn/archive/{hash}.tar.zst`). No `filename` field is needed — the URL template includes the file extension. For future protocols, use the extension form with a `type` field (for example, `{ "type": "s3", "url": "..." }`). Consumers that do not understand an extension `type` MAY skip that entry and continue trying other `dist` entries.
 
 **Incremental delivery note:**
 - `type=archive` is a full content snapshot transport.
-- Delta discovery is endpoint-driven (not dist-driven): clients MAY attempt `endpoints.archive[].delta_url` first when present.
+- Delta discovery is endpoint-driven (not dist-driven): clients MAY attempt the archive endpoint's `delta_url` first when present.
 - `delta_url` MUST include `{hash}` (target hash) and `{old_hash}` (local cached base hash). Delta direction is always `old_hash -> hash`.
-- Clients MUST use `archive[].format` to select decoders, not URL suffix guessing.
-- Current Hypha release generation emits `archive[].format = tar+zstd` only.
+- Clients MUST use the archive endpoint's `format` field to select decoders, not URL suffix guessing.
+- Current Hypha release generation emits `format = tar+zstd` only.
 - If delta fetch/apply fails, or no valid base is available, clients SHOULD fall back to full `type=archive`.
 - Any optimization path (delta or full) MUST converge to the same final verified content hash (see §5.1).
 

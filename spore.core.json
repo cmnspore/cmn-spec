@@ -2,7 +2,7 @@
   "$schema": "https://cmn.dev/schemas/v1/spore-core.json",
   "id": "cmn-spec",
   "name": "Code Mycelial Network Specification",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "domain": "cmn.dev",
   "key": "ed25519.7BmCWmBb2YeUWR7pmHvwAvi9wRm96VpZsJvZFSTfc2Uu",
   "synopsis": "Code Mycelial Network (CMN) specification — normative documents, JSON schemas, and conformance test vectors for sovereign code distribution",
@@ -11,20 +11,23 @@
     "Ship machine-readable JSON Schema definitions (cmn.json, mycelium.json, spore-core.json, spore.json, taste.json) for validating all protocol artifacts, plus conformance test vectors (merkle, signature, uri, capsule, taste gating, key rotation, bond traversal) so implementers can verify correctness without reading prose"
   ],
   "mutations": [
-    "Move versioning rules into normative chapters — protocol negotiation and migration rules into 01-Substrate, algorithm migration lifecycle into 07-Algorithm Registry",
-    "Clean up overview as a pure table of contents without site-specific frontmatter, with role-based reading paths"
+    "Unify cmn.json endpoints as typed array — each entry has type/url plus type-specific fields (hash for mycelium, format/delta_url for archive), replacing the fixed-key object structure",
+    "Remove mycelium_hash as top-level required field — mycelium hash now lives on the type:mycelium endpoint entry",
+    "Relax capsule_entry.required to [uri, key] — taste-only domains can omit mycelium/spore/archive endpoints",
+    "Simplify spore dist archive — filename no longer required, resolved via endpoint url template + hash",
+    "Add cmn.json as accepted pulse type — synapse treats it as notification, fetches live version from domain to verify"
   ],
   "license": "CC0-1.0",
   "bonds": [
     {
-      "relation": "follows",
-      "uri": "cmn://cmn.dev/b3.6kdwoYeoB3GbKVFB4NnKUfHtuuNttHLpaf9nYgtMHhf6",
-      "id": "agent-first-data",
-      "reason": "Uses agent-first-data naming conventions for all field names (e.g., updated_at_epoch_ms, cost_msats, created_at_epoch_s)"
+      "relation": "spawned_from",
+      "uri": "cmn://cmn.dev/b3.68Y6mYoq4fX9stkmBhnXRADkgCQFZyhFJGE13fRHRyku"
     },
     {
-      "relation": "spawned_from",
-      "uri": "cmn://cmn.dev/b3.7ez1wHKfjepczJEkFCVwnTHFEhET3L7pHsKdVt8HXDra"
+      "relation": "follows",
+      "uri": "cmn://cmn.dev/b3.HZaxMbpz26kNpH5GPG7pYH94xuEogVToxCiCivV3oCb6",
+      "id": "agent-first-data",
+      "reason": "Uses agent-first-data naming conventions for all field names (e.g., updated_at_epoch_ms, cost_msats, created_at_epoch_s)"
     }
   ],
   "tree": {

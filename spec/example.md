@@ -81,18 +81,12 @@ The release command:
     {
       "uri": "cmn://cmn.dev",
       "key": "ed25519.5XmkQ9vZP8nL3xJdFtR7wNcA6sY2bKgU1eH9pXb4",
-      "mycelium_hash": "b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
-      "endpoints": {
-        "mycelium": "https://cmn.dev/cmn/mycelium/{hash}.json",
-        "spore": "https://cmn.dev/cmn/spore/{hash}.json",
-        "archive": [
-          {
-            "format": "tar+zstd",
-            "url": "https://cmn.dev/cmn/archive/{filename}",
-            "delta_url": "https://cmn.dev/cmn/archive/delta/{hash}/{old_hash}.zdict"
-          }
-        ]
-      }
+      "endpoints": [
+        {"type": "mycelium", "url": "https://cmn.dev/cmn/mycelium/{hash}.json", "hash": "b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"},
+        {"type": "spore",    "url": "https://cmn.dev/cmn/spore/{hash}.json"},
+        {"type": "archive",  "url": "https://cmn.dev/cmn/archive/{hash}.tar.zst", "format": "tar+zstd"},
+        {"type": "taste",    "url": "https://cmn.dev/cmn/taste/{hash}.json"}
+      ]
     }
   ],
   "capsule_signature": "ed25519.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa23yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"
@@ -150,10 +144,7 @@ The release command:
     },
     "core_signature": "ed25519.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa23yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
     "dist": [
-      {
-        "type": "archive",
-        "filename": "cmn-spec.tar.zst"
-      }
+      { "type": "archive" }
     ]
   },
   "capsule_signature": "ed25519.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa23yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"
@@ -341,10 +332,7 @@ Bob's `spore.json` now has a different hash (because core changed) and traces ba
     },
     "core_signature": "ed25519.<bob_sig>",
     "dist": [
-      {
-        "type": "archive",
-        "filename": "cmn-spec.tar.zst"
-      }
+      { "type": "archive" }
     ]
   },
   "capsule_signature": "ed25519.<bob_capsule_sig>"

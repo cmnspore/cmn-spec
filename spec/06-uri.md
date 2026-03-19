@@ -41,7 +41,7 @@ cmn://cmn.dev/mycelium/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2
 **Properties:**
 - Hash ensures mycelium integrity
 - Each update produces a new hash
-- Hash stored in `cmn.json` as `capsules[0].mycelium_hash`
+- Hash stored in `cmn.json` as the `hash` field on the `type: "mycelium"` endpoint
 
 ### 1.3 Spore URI
 
@@ -134,7 +134,7 @@ Output: (full mycelium manifest)
 1. Extract domain: `cmn.dev`
 2. Fetch `https://cmn.dev/.well-known/cmn.json`
 3. Read primary capsule `capsules[0]`
-4. Get mycelium endpoint template and `mycelium_hash`
+4. Find `type: "mycelium"` endpoint, get its `url` template and `hash`
 5. Replace `{hash}` → fetch full mycelium manifest
 
 ### 3.3 Replicate Verification

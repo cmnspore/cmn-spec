@@ -131,10 +131,10 @@
     },
     "dist_archive": {
       "type": "object",
-      "required": ["type", "filename"],
+      "required": ["type"],
       "properties": {
         "type": { "const": "archive" },
-        "filename": { "type": "string", "minLength": 1, "description": "Archive filename/hash resolved via endpoints.archive[].url template" }
+        "filename": { "type": "string", "minLength": 1, "description": "Deprecated. Archive URL is now resolved via endpoints archive url template + spore hash. Ignored by clients." }
       },
       "additionalProperties": true
     },

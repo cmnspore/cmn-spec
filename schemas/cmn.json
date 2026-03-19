@@ -33,7 +33,7 @@
   "$defs": {
     "capsule_entry": {
       "type": "object",
-      "required": ["uri", "key", "mycelium_hash", "endpoints"],
+      "required": ["uri", "key"],
       "properties": {
         "uri": {
           "type": "string",
@@ -50,11 +50,10 @@
           "description": "Optional retired keys for verifying historical content signed before key rotation",
           "items": { "$ref": "#/$defs/previous_key" }
         },
-        "mycelium_hash": {
-          "$ref": "#/$defs/content_hash",
-          "description": "Content hash of the mycelium manifest for this entry"
-        },
-        "endpoints": { "$ref": "#/$defs/endpoints" }
+        "endpoints": {
+          "$ref": "#/$defs/endpoints",
+          "description": "Typed array of endpoint definitions. Optional — taste-only domains MAY omit endpoints or provide only a taste endpoint."
+        }
       },
       "additionalProperties": true
     },
@@ -96,55 +95,109 @@
       "pattern": "^[a-z0-9][a-z0-9+._-]*$",
       "description": "Archive transport format identifier. Clients MUST select decoders by this field, not by filename suffix."
     },
-    "archive_endpoint": {
+    "endpoint_type": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9._-]*$",
+      "description": "Endpoint type identifier (e.g., mycelium, spore, archive, taste)"
+    },
+    "endpoint_mycelium": {
       "type": "object",
-      "required": ["format", "url"],
+      "required": ["type", "url", "hash"],
       "properties": {
-        "format": {
-          "$ref": "#/$defs/archive_format",
-          "description": "Full-archive format identifier, e.g. tar+zstd or tar+gzip"
-        },
+        "type": { "const": "mycelium" },
         "url": {
-          "type": "string",
-          "pattern": "\\{filename\\}",
-          "description": "Template URL for this archive format. MUST include {filename}, e.g. https://example.com/cmn/archive/{filename}"
-        },
-        "delta_url": {
-          "type": "string",
-          "pattern": "(?=.*\\{hash\\})(?=.*\\{old_hash\\})",
-          "description": "Optional template URL for archive deltas for this format. MUST include {hash} (target/new hash) and {old_hash} (cached base hash). Direction is old_hash -> hash."
-        }
-      },
-      "additionalProperties": true
-    },
-    "archive_endpoint_array": {
-      "type": "array",
-      "minItems": 1,
-      "items": { "$ref": "#/$defs/archive_endpoint" },
-      "description": "Ordered archive format candidates. Each entry MAY define a same-format delta_url. Clients SHOULD try in listed order and fall back as needed."
-    },
-    "endpoints": {
-      "type": "object",
-      "required": ["mycelium", "spore", "archive"],
-      "properties": {
-        "mycelium": {
           "type": "string",
           "pattern": "\\{hash\\}",
           "description": "Template URL for fetching mycelium, e.g. https://example.com/cmn/mycelium/{hash}.json"
         },
-        "spore": {
+        "hash": {
+          "$ref": "#/$defs/content_hash",
+          "description": "Content hash of the current mycelium manifest. Used for change detection."
+        }
+      },
+      "additionalProperties": true
+    },
+    "endpoint_spore": {
+      "type": "object",
+      "required": ["type", "url"],
+      "properties": {
+        "type": { "const": "spore" },
+        "url": {
           "type": "string",
           "pattern": "\\{hash\\}",
           "description": "Template URL for fetching spores, e.g. https://example.com/cmn/spore/{hash}.json"
+        }
+      },
+      "additionalProperties": true
+    },
+    "endpoint_archive": {
+      "type": "object",
+      "required": ["type", "url", "format"],
+      "properties": {
+        "type": { "const": "archive" },
+        "url": {
+          "type": "string",
+          "pattern": "\\{hash\\}",
+          "description": "Template URL for archives. MUST include {hash}, e.g. https://example.com/cmn/archive/{hash}.tar.zst"
         },
-        "archive": { "$ref": "#/$defs/archive_endpoint_array" },
-        "taste": {
+        "format": {
+          "$ref": "#/$defs/archive_format",
+          "description": "Archive format identifier, e.g. tar+zstd or tar+gzip"
+        },
+        "delta_url": {
+          "type": "string",
+          "pattern": "(?=.*\\{hash\\})(?=.*\\{old_hash\\})",
+          "description": "Optional template URL for archive deltas. MUST include {hash} (target) and {old_hash} (cached base). Direction is old_hash -> hash."
+        }
+      },
+      "additionalProperties": true
+    },
+    "endpoint_taste": {
+      "type": "object",
+      "required": ["type", "url"],
+      "properties": {
+        "type": { "const": "taste" },
+        "url": {
           "type": "string",
           "pattern": "\\{hash\\}",
           "description": "Template URL for fetching taste reports, e.g. https://example.com/cmn/taste/{hash}.json"
         }
       },
       "additionalProperties": true
+    },
+    "endpoint_extension": {
+      "type": "object",
+      "required": ["type", "url"],
+      "properties": {
+        "type": {
+          "allOf": [
+            { "$ref": "#/$defs/endpoint_type" },
+            { "not": { "enum": ["mycelium", "spore", "archive", "taste"] } }
+          ],
+          "description": "Extension endpoint type identifier"
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Template URL for this endpoint type"
+        }
+      },
+      "additionalProperties": true
+    },
+    "endpoint_entry": {
+      "oneOf": [
+        { "$ref": "#/$defs/endpoint_mycelium" },
+        { "$ref": "#/$defs/endpoint_spore" },
+        { "$ref": "#/$defs/endpoint_archive" },
+        { "$ref": "#/$defs/endpoint_taste" },
+        { "$ref": "#/$defs/endpoint_extension" }
+      ]
+    },
+    "endpoints": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/endpoint_entry" },
+      "description": "Typed array of endpoint definitions. Each entry has a 'type' field. Multiple archive entries with different formats are allowed. Clients SHOULD try entries in listed order."
     }
   }
 }
