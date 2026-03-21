@@ -80,11 +80,12 @@ The following fields are **optional** and not required by the protocol. When pre
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `capsule.core.id` | String | URL-safe path identifier (e.g., `cmn-spec`). Used by publishers for directory names, mycelium deduplication, and default export paths. |
+| `capsule.core.id` | String | Opaque publisher-defined identifier (e.g., `cmn-spec`). Useful for mycelium deduplication and tooling. |
 | `capsule.core.version` | String | Human-readable version (e.g., `1.0.0`). Meaningful to the publisher; visitors address by hash. |
 
 **id vs name:**
-- `id`: Used in paths and tooling (e.g., `cmn-spec.tar.zst`). Must be URL-safe.
+- `id`: Consumers MUST treat it as opaque and MUST NOT use raw `id` directly as a filesystem path, shell token, or URL path segment.
+- Implementations MAY derive a local-safe name from `id`. If that derivation is unsafe or collides, they MUST fall back to the spore hash.
 - `name`: Displayed to users. Can contain spaces and special characters.
 
 ### 2.3 Distribution Fields (Mutable)
@@ -106,7 +107,7 @@ The first three are built-in v1 entries. `archive` uses endpoint indirection: th
 - Delta discovery is endpoint-driven (not dist-driven): clients MAY attempt the archive endpoint's `delta_url` first when present.
 - `delta_url` MUST include `{hash}` (target hash) and `{old_hash}` (local cached base hash). Delta direction is always `old_hash -> hash`.
 - Clients MUST use the archive endpoint's `format` field to select decoders, not URL suffix guessing.
-- Current Hypha release generation emits `format = tar+zstd` only.
+- The examples in this spec use `format = tar+zstd`, but the protocol does not privilege any single archive format.
 - If delta fetch/apply fails, or no valid base is available, clients SHOULD fall back to full `type=archive`.
 - Any optimization path (delta or full) MUST converge to the same final verified content hash (see §5.1).
 
@@ -148,7 +149,7 @@ Bonds declare relationships to other spores:
 |-------|------|----------|-------------|
 | `uri` | String | Yes | CMN URI of the bonded spore (e.g., `cmn://{domain}/{hash}`) |
 | `relation` | String | Yes | Relationship type (see predefined types below) |
-| `id` | String | No | Human-readable identifier for this bond. Bond-fetch uses it as the directory name under `.cmn/bonds/` (e.g. `.cmn/bonds/agent-first-data/`) instead of the hash. |
+| `id` | String | No | Optional opaque alias for this bond. See `id` handling in §2.2.1. |
 | `reason` | String | No | Why this bond exists and what role it plays in this spore |
 | `with` | Object | No | Bond-specific parameters defined by the bonded spore's convention |
 
@@ -243,7 +244,7 @@ my-project/
             └── content/
 ```
 
-The **bond** operation reads `spore.core.json` bonds and fetches tasted-safe bonded spores to `.cmn/bonds/`. It excludes `spawned_from` (handled by `grow`) and `absorbed_from` (historical — the merge is already done). Each bond is stored under its `id` when present (e.g. `.cmn/bonds/agent-first-data/`), otherwise under its hash. A `bonds.json` index maps dir names to hashes, URIs, relations, and names for quick lookup by build systems and tools.
+The **bond** operation reads `spore.core.json` bonds and fetches tasted-safe bonded spores to `.cmn/bonds/`. It excludes `spawned_from` (handled by `grow`) and `absorbed_from` (historical — the merge is already done). Each bond is stored under an implementation-defined local-safe name derived from `id` when present; if absent, unsafe, or colliding, implementations fall back to the hash. A `bonds.json` index maps dir names to hashes, URIs, relations, and names for quick lookup by build systems and tools.
 
 ## 3. Schema Validation
 
@@ -293,10 +294,10 @@ The `capsule.core_signature` signs the immutable metadata:
 
 ### 4.3 URI Hash Calculation
 
-The hash in `capsule.uri` is calculated from **code** (Merkle Tree) + **core** + **core_signature**:
+The hash in `capsule.uri` is calculated from **tree hash** (Merkle Tree) + **core** + **core_signature**:
 
-1. Compute code Merkle Tree hash (see §4.6)
-2. Construct hash input: `{"code": "<code_hash>", "core": <core>, "core_signature": "<signature>"}`
+1. Compute tree hash (see §4.6)
+2. Construct hash input: `{"tree_hash": "<tree_hash>", "core": <core>, "core_signature": "<signature>"}`
 3. Serialize hash input using JCS
 4. Hash with BLAKE3 → `b3.<base58>`
 5. Construct URI: `cmn://{domain}/b3.<base58>`
@@ -323,9 +324,9 @@ The `capsule_signature` signs the entire capsule object (including `uri`, `core`
 
 All signatures and hashes use JCS (see [01-substrate §1.3](./01-substrate.md#1-3-value-formats)).
 
-### 4.6 Code Hash (Merkle Tree)
+### 4.6 Tree Hash (Merkle Tree)
 
-The code hash uses a **Git-like Merkle Tree** approach for content-addressing.
+The tree hash uses a **Git-like Merkle Tree** approach for content-addressing.
 
 #### 4.6.1 Hashing Configuration
 
@@ -465,7 +466,7 @@ BLAKE3 → root_hash (32 bytes binary)
 
 Convert `root_hash` to base58 → `b3.<~44 base58 chars>`
 
-This root hash is the **code hash** used in §4.3 (URI hash calculation).
+This root hash is the **tree_hash** used in §4.3 (URI hash calculation).
 
 **Key details:**
 - File mode `100644` for regular files, `100755` for executables, `40000` for directories
@@ -549,7 +550,7 @@ A **replicate** hosts the same spore with different `dist` URLs:
     },
     "core_signature": "ed25519.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa23yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
     "dist": [
-      { "type": "archive", "filename": "cmn-spec.tar.zst" }
+      { "type": "archive" }
     ]
   },
   "capsule_signature": "ed25519...."
@@ -596,7 +597,7 @@ A **spawn** creates a new spore derived from an existing one (new domain, modifi
 
 ## 7. spore.core.json
 
-Each spore source directory includes a `spore.core.json` file containing the `capsule.core` fields (§2.2). It does not contain `dist` or signatures — those are added during release.
+Each spore source directory includes a `spore.core.json` file containing the author-maintained portion of `capsule.core` (§2.2). It does not contain `dist` or signatures — those are added during release. Publishing implementations MAY also populate derived core fields such as `key` and `updated_at_epoch_ms` during release if they are absent from the draft.
 
 **Schema:** `https://cmn.dev/schemas/v1/spore-core.json`
 
@@ -617,8 +618,9 @@ Each spore source directory includes a `spore.core.json` file containing the `ca
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `id` | String | URL-safe path identifier (e.g., `cmn-spec`). Used for directory names and mycelium deduplication. |
+| `id` | String | Opaque publisher-defined identifier (e.g., `cmn-spec`). Useful for mycelium deduplication and tooling. |
 | `version` | String | Human-readable version (e.g., `1.0.0`). Informational only; visitors address by hash. |
+| `key` | String | Author public key. If omitted in `spore.core.json`, the publishing implementation MUST populate it from the current signing domain identity during release. If present, it MUST match that domain identity. |
 | `mutations` | Array | What changed relative to the `spawned_from` parent — describes the mutations applied to derive this spore from its ancestor. |
 | `bonds` | Array | List of `{uri, relation, id?, reason?}` objects (see §2.4). |
 
@@ -666,10 +668,10 @@ Each spore source directory includes a `spore.core.json` file containing the `ca
 ```
 spore.core.json (local draft, committed to git)
      │
-     │  hypha hatch  ← create or update
+     │  publish-preparation step  ← create or update metadata
      │
      ▼
-hypha release
+release implementation
      │
      ├── Read spore.core.json
      ├── Compute Merkle Tree root hash (§4.6)
@@ -682,4 +684,4 @@ hypha release
 spore.json (signed, published, immutable)
 ```
 
-The `spore.core.json` file is the only file a developer edits directly. The `release` command reads it, adds computed fields (`dist`, signatures, URI), and produces the final `spore.json`.
+The `spore.core.json` file is the only file a developer edits directly. A release implementation reads it, fills any derived core fields that are still absent (for example `key`), adds computed fields (`dist`, signatures, URI), and produces the final `spore.json`.

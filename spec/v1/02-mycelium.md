@@ -32,7 +32,7 @@ The domain entry point (`cmn.json`) is documented in [01-substrate.md](./01-subs
           "id": "cmn-tools",
           "hash": "b3.8cQnH4xPmZ2vLkJdRt7wNbA9sF3eYgU1hK6pXq5",
           "name": "CMN Tools",
-          "synopsis": "Command-line tools for CMN protocol (hypha, synapse, substrate)"
+          "synopsis": "Command-line and service tooling for the CMN protocol"
         }
       ]
     },
@@ -56,7 +56,7 @@ The domain entry point (`cmn.json`) is documented in [01-substrate.md](./01-subs
 | `capsule.core` | Object | The mycelium content. |
 | `capsule.core.name` | String | Developer or organization name. |
 | `capsule.core.domain` | String | The domain (e.g., `cmn.dev`). |
-| `capsule.core.key` | String | Ed25519 public key of the content author. Enables offline signature verification via Synapse without fetching cmn.json. |
+| `capsule.core.key` | String | Ed25519 public key of the content author. Enables offline signature verification once the key-domain binding is already trusted, without fetching `cmn.json`. |
 | `capsule.core.synopsis` | String | Brief description of the developer/org. |
 | `capsule.core.bio` | String? | Multiline markdown with full details about this domain. |
 | `capsule.core.nutrients` | Array? | Nutrient methods, ordered by preference (first = preferred). See §2.3. |
@@ -119,7 +119,7 @@ The `type` field is an open string — any value is valid. New payment networks 
 **Design notes:**
 - Nutrient type names match `strain-payment-{type}` — a tool can map a nutrient entry to the corresponding strain convention without a lookup table.
 - No amounts — nutrient entries declare *where* to pay, not *how much*. Donation amounts are the donor's choice.
-- No dependency splits — nutrients declares "how to pay this domain." Dependency-aware distribution is a tool-layer concern: Synapse can traverse the bond graph (`depends_on`, `spawned_from`, `absorbed_from`) and collect nutrient methods from each domain's mycelium.
+- No dependency splits — nutrients declares "how to pay this domain." Dependency-aware distribution is a tool-layer concern: tooling MAY traverse the bond graph (`depends_on`, `spawned_from`, `absorbed_from`) and collect nutrient methods from each domain's mycelium.
 - Nutrients is inside `core` and protected by `core_signature` — mirrors cannot tamper with the original author's nutrient addresses.
 
 ## 3. Schema Validation
@@ -231,7 +231,7 @@ Find the `type: "spore"` endpoint in `capsules[0].endpoints`:
 
 Resolution flow: cmn.json → find `type: "spore"` endpoint → fetch spore.
 
-If endpoints are missing, return an error. Synapse is only used as a **backup** when the domain is unreachable, not as a default endpoint.
+If endpoints are missing, return an error. Synapse is only a **fallback** when the domain is unreachable, not a default endpoint.
 
 **Static Deployment:** This design allows static file hosting without any server-side logic.
 
@@ -241,7 +241,7 @@ When mycelium is updated, publishing tools MUST regenerate both the capsule and 
 
 **Optional notification:**
 
-Publishing implementations MAY send a Pulse notification to registered Synapse instances (see [05-strain §5.2](05-strain.md)).
+Publishing implementations MAY send a Pulse notification to one or more Synapse nodes (see [05-strain §5.2](05-strain.md)).
 
 **Synapse Validation:**
 
@@ -253,7 +253,7 @@ Publishing implementations MAY send a Pulse notification to registered Synapse i
    - `new == cached`, different hash → **Reject** (conflict — publisher MUST increment timestamp to correct)
    - `new < cached` → **Reject** (older version)
 
-**Content Correction:** If a publisher needs to fix a mistake (e.g., typo in synopsis, wrong spore entry), they MUST increment `updated_at_epoch_ms` before re-signing and re-publishing. This produces a new hash and a newer timestamp, which Synapse accepts as an ordinary update. The monotonic timestamp requirement ensures that corrections are unambiguous and prevents conflicting edits.
+**Content Correction:** If a publisher needs to fix a mistake (e.g., typo in synopsis, wrong spore entry), they MUST increment `updated_at_epoch_ms` before re-signing and re-publishing. This produces a new hash and a newer timestamp, which a Synapse node can accept as an ordinary update. The monotonic timestamp requirement ensures that corrections are unambiguous and prevents conflicting edits.
 
 **Protection Against:**
 - Replay attacks (old versions rejected by timestamp)
@@ -307,7 +307,7 @@ Publishing implementations MAY send a Pulse notification to registered Synapse i
           "id": "cmn-tools",
           "hash": "b3.8cQnH4xPmZ2vLkJdRt7wNbA9sF3eYgU1hK6pXq5",
           "name": "CMN Tools",
-          "synopsis": "Command-line tools for CMN protocol (hypha, synapse, substrate)"
+          "synopsis": "Command-line and service tooling for the CMN protocol"
         }
       ]
     },

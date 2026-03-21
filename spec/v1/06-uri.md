@@ -41,6 +41,7 @@ cmn://cmn.dev/mycelium/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2
 **Properties:**
 - Hash ensures mycelium integrity
 - Each update produces a new hash
+- Hash is `blake3(jcs({"core": <core>, "core_signature": "<signature>"}))`
 - Hash stored in `cmn.json` as the `hash` field on the `type: "mycelium"` endpoint
 
 ### 1.3 Spore URI
@@ -59,6 +60,7 @@ cmn://cmn.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2
 **Properties:**
 - Hash ensures content integrity
 - Different content = different hash
+- Hash is `blake3(jcs({"tree_hash": "<tree_hash>", "core": <core>, "core_signature": "<signature>"}))`
 - Same content across mirrors = same hash
 
 ### 1.4 Taste URI
@@ -76,7 +78,7 @@ cmn://alice.dev/taste/b3.7kLmN2pQrS4tUvWx8yZaB3cD5eF6gH9iJ1kL2mN3o
 
 **Properties:**
 - Domain identifies the taster (evaluator), not the spore being evaluated
-- Hash is computed from taste core + core_signature (same pattern as spore hashing)
+- Hash is `blake3(jcs({"core": <core>, "core_signature": "<signature>"}))`
 
 ### 1.5 Replicate Identification
 

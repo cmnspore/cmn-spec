@@ -2,6 +2,8 @@
 
 This walkthrough uses **cmn-spec** (the CMN Protocol Specification itself) as a real-world example, tracing the full lifecycle from publishing through discovery to consumption.
 
+> Note: This walkthrough is non-normative. Command snippets use the Hypha CLI and a Synapse service only as concrete examples; CMN itself does not require either.
+
 ## 1. Publisher (cmn.dev)
 
 ### 1.1 Establish Mycelium Root
@@ -54,17 +56,19 @@ This produces `spore.core.json`:
 }
 ```
 
+The publisher key may be written into `spore.core.json` ahead of time, but it may also be omitted there and filled from the release domain identity during publishing.
+
 ### 1.3 Release
 
 ```bash
 hypha release --domain cmn.dev
 ```
 
-The release command:
+In this example, the publishing tool:
 1. Reads `spore.core.json`
-2. Computes Merkle Tree root hash from code content (BLAKE3)
+2. Computes Merkle Tree root hash from tree content (BLAKE3)
 3. Signs `core` with Ed25519 → `core_signature`
-4. Constructs the hash input: `{"code":"<merkle_root>","core":<core>,"core_signature":"<sig>"}`
+4. Constructs the hash input: `{"tree_hash":"<merkle_root>","core":<core>,"core_signature":"<sig>"}`
 5. Computes final hash → `b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2`
 6. Builds `capsule` with URI, core, core_signature, dist
 7. Signs `capsule` → `capsule_signature`
@@ -153,16 +157,16 @@ The release command:
 
 ### 1.4 Pulse (Optional)
 
-Notify a Synapse instance for immediate indexing:
+Notify a Synapse service for immediate indexing:
 
 ```bash
 hypha mycelium pulse --synapse https://synapse.cmn.dev \
   --file ~/.cmn/mycelium/cmn.dev/public/cmn/spore/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2.json
 ```
 
-## 2. Synapse (Indexer)
+## 2. Optional Indexer (Example)
 
-When the Synapse receives the pulse (or discovers cmn.dev via crawl):
+When the receiving service gets the pulse (or discovers cmn.dev via crawl):
 
 ```
 1. Receive POST /synapse/pulse with signed spore manifest
@@ -176,7 +180,7 @@ When the Synapse receives the pulse (or discovers cmn.dev via crawl):
 9. Return: {"code": "ok", "result": {"action": "indexed"}}
 ```
 
-The spore is now discoverable via Synapse query endpoints:
+The spore is now discoverable via that service's query endpoints:
 
 ```bash
 # By hash
@@ -193,7 +197,7 @@ GET /synapse/search?q=protocol+specification
 
 ### 3.1 Discover
 
-Bob searches for protocol specifications via Synapse:
+Bob searches for protocol specifications via that indexer:
 
 ```bash
 hypha search "protocol specification" --synapse https://synapse.cmn.dev
@@ -247,7 +251,7 @@ hypha taste cmn://cmn.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2
 The `taste` command fetches the spore (and its parent, if `spawned_from` exists) to cache and outputs paths for the visitor to review. The visitor reads the code, then records a verdict — see [04-taste](04-taste.md) for the full verdict scale and processing rules:
 
 ```bash
-hypha taste cmn://cmn.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2 --taste safe
+hypha taste cmn://cmn.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2 --verdict safe
 ```
 
 ### 3.4 Spawn
@@ -344,8 +348,8 @@ Both signatures verify against `bob.dev`'s public key. The `spawned_from` bond c
 ## Summary
 
 ```
-Publisher (cmn.dev)          Synapse                    bob.dev
-─────────────────           ─────────                  ───────
+Publisher (cmn.dev)          Indexer                    bob.dev
+─────────────────           ───────                  ───────
 mycelium root
 hatch
 release ─── pulse ──────→ verify + index

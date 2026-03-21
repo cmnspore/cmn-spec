@@ -114,8 +114,8 @@ Any spore, any source:
 3. Cache expired/missing → fetch domain cmn.json
    → key found → trusted ✓, cache key
    → key NOT found / domain down:
-     → source is Synapse → trusted ✓, don't cache
-     → source not Synapse → ask Synapse (key, domain) → trusted ✓, don't cache
+     → source is a Synapse node → second-class trust ✓, don't cache
+     → source not Synapse → ask a Synapse node (key, domain) → second-class trust ✓, don't cache
    → nothing works → untrusted ✗
 ```
 
@@ -159,7 +159,7 @@ Domains MAY rotate their Ed25519 key at any time by updating `cmn.json` with a n
 
 **Why this works:** The key is the cryptographic identity; the domain is the name resolution layer. HTTPS authenticates the domain, the domain declares its keys (current and previous) in `cmn.json`, and all content is verified against these keys. CMN domains can rotate keys freely because the domain remains the stable discovery anchor while the key provides cryptographic proof of authorship.
 
-**Synapse behavior:** Synapse MUST cache `key` alongside every verified mycelium. When verifying historical content (e.g., a replicate whose original domain is offline), Synapse uses the cached key rather than requiring a live fetch.
+**Synapse behavior:** A Synapse node that offers key witness MUST cache `key` alongside every verified mycelium. When verifying historical content (e.g., a replicate whose original domain is offline), it uses that cached key rather than requiring a live fetch.
 
 #### 1.2.4 Key Trust Model
 
@@ -170,7 +170,7 @@ Spores embed the author's public key in `capsule.core.key`. This makes spores se
 | Tier | Source | Trust Level | Cached | TTL |
 |------|--------|-------------|--------|-----|
 | Domain confirmation | `cmn.json` from HTTPS domain | First-class | Yes | 7 days (configurable) |
-| Synapse witness | Synapse key endpoint | Second-class | No | Re-verified each cycle |
+| Synapse witness | Synapse witness endpoint | Second-class | No | Re-verified each cycle |
 
 **Refresh policies (implementation guidance):**
 
@@ -197,7 +197,7 @@ In `offline`, a missing/expired key trust cache MUST fail verification (for exam
 
 **Synapse witness (second-class trust):**
 - When the domain is offline or unreachable, ask a Synapse node for the domain's known public key
-- Synapse returns the key it cached during previous crawls
+- The Synapse node returns a key it cached during previous successful verification cycles
 - This trust is NOT cached locally — it must be re-verified each time
 - Provides resilience against domain outages without creating permanent trust from a third party
 
@@ -242,7 +242,7 @@ This ensures identical input produces identical bytes for signing and hashing, r
    - Control distribution endpoints
    - Evolve code through spawn and absorb across domains
 
-2. **Synapse (Indexers)**
+2. **Synapse (Optional Indexing & Discovery)**
    - Crawl and cache Mycelium metadata from publisher domains
    - Build searchable index for discovery
    - Provide fallback when domains are offline
@@ -250,7 +250,7 @@ This ensures identical input produces identical bytes for signing and hashing, r
 
 **Visitors (read-only):**
 
-- Discover spores via Synapse search or direct URI
+- Discover spores via Synapse or direct URI
 - Inspect metadata (sense) and evaluate safety (taste) before use
 - Fetch and verify spores from publisher domains
 - No domain, no keys, no infrastructure needed
@@ -274,23 +274,22 @@ The URI is the **primary key** for all entities:
 
 For detailed URI specification, see [06-uri.md](./06-uri.md).
 
-### 2.2 Synapse (Backup & Discovery)
+### 2.2 Synapse (Optional Indexing & Discovery)
 
-**Role:**
-- Crawls known domains periodically
-- Caches Mycelium and Spore metadata
-- Provides fallback when origin is offline
-- Builds searchable index for discovery
+CMN does not require any particular Synapse implementation. A Synapse is an optional service that caches verified metadata, answers discovery queries, and provides origin-offline fallbacks. Its concrete interfaces and extensions are defined by the strains it follows.
+
+**Possible roles:**
+- Crawl known domains periodically
+- Cache Mycelium and Spore metadata
+- Provide fallback when origin is offline
+- Build searchable indexes for discovery
 
 **Limitations:**
 - Read-only - cannot modify domain content
 - No authority - all content must verify against the domain's public key
-- Optional - domains can operate without Synapse
+- Optional - domains can operate without any such service
 
-**API Examples (defined by the strain-synapse convention):**
-- `GET /synapse/mycelium/{domain}` - Get cached mycelium
-- `GET /synapse/spore/{hash}` - Get spore by content hash
-- `GET /synapse/spore/{hash}/bonds` - Get bond relationships
+Concrete Synapse interfaces are defined by the strains each Synapse node follows.
 
 ## 3. Content Distribution
 
@@ -331,7 +330,7 @@ Spores can reference multiple source locations:
 {
   "capsule": {
     "dist": [
-      { "type": "archive", "filename": "cmn-spec.tar.zst" },
+      { "type": "archive" },
       { "type": "git", "url": "https://github.com/user/repo", "ref": "v1.0.0" }
     ]
   }
@@ -345,16 +344,16 @@ Spores can reference multiple source locations:
 
 **Incremental behavior:** `git` and optional `delta_url` on archive endpoints provide incremental transfer paths. `delta_url` is endpoint-level discovery (not a separate dist entry). It MUST include `{hash}` (target hash) and `{old_hash}` (cached base hash); direction is always `old_hash -> hash`. Implementations SHOULD fall back to full `archive` when delta prerequisites are unavailable.
 
-The protocol does not require filename-suffix parsing for format detection. Clients MUST use `archive[].format` to choose decoders. In current Hypha releases, only `tar+zstd` is generated.
+The protocol does not require filename-suffix parsing for format detection. Clients MUST use the `format` field on the `type: "archive"` endpoint to choose decoders. The examples in this spec use `tar+zstd`, but the protocol does not privilege any single archive format.
 
 ### 3.3 Pulse (Push Notification)
 
-Domains can notify Synapse immediately after publishing by sending a Pulse notification (see [05-strain §5.2](05-strain.md)).
+Domains MAY notify a Synapse node immediately after publishing by sending a Pulse notification (see [05-strain §5.2](05-strain.md)).
 
 **What happens:**
-- Sends signed mycelium to Synapse
-- Synapse verifies signature via the domain's public key
-- Synapse updates index immediately
+- Sends signed mycelium to a Synapse node
+- The receiver verifies signatures via the domain's public key
+- The receiver updates its index immediately
 - No waiting for crawler
 
 **Optional:** Crawlers will eventually discover changes anyway.
@@ -395,7 +394,7 @@ A fork (spawn) creates a new spore with different hash, new domain, and a `spawn
 
 **Evolution Graph:**
 - Bonds track lineage
-- Synapse builds evolution trees
+- Synapse nodes may build evolution trees
 - No single "canonical" version - visitor decides
 
 See [03-spore §6.2](./03-spore.md#6-2-spawn-different-hash) for the full spawn format.
@@ -437,7 +436,7 @@ Spore A
 
 ## 6. Protocol Versioning
 
-The protocol version lives in the `$schema` URL path, for example `https://cmn.dev/schemas/v1/spore.json`. All CMN schema documents for a given release share the same version segment.
+The protocol version lives in the `$schema` URL path, for example `https://cmn.dev/schemas/v1/spore.json`. All CMN schema documents for a given release share the same version segment. This repository publishes the corresponding prose and conformance bundles under matching versioned paths such as `spec/v1/` and `conformance/v1/`.
 
 ### 6.1 Version Negotiation
 

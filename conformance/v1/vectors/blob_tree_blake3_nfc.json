@@ -1,5 +1,6 @@
 {
   "version": "cmn-conformance-v1",
+  "description": "blob_tree_blake3_nfc tree hashing vectors. Tests NFC normalization, exclusions, and follow-rules behavior.",
   "cases": [
     {
       "id": "basic_tree",

@@ -1,12 +1,34 @@
 # CMN Conformance Vectors (v1)
 
-This directory provides implementation-neutral conformance vectors for:
+This directory provides implementation-neutral conformance vectors for every
+normative core spec chapter plus supporting protocol behaviors:
 
+- `substrate`: `01-substrate` domain entry, endpoint resolution, protocol versions
+- `mycelium`: `02-mycelium` manifest inventory, nutrients, taste catalog
+- `spore`: `03-spore` manifest semantics, distributions, lineage helpers
+- `taste`: `04-taste` base verdict-to-action safety rules
+- `strain`: `05-strain` follows semantics, root-lineage classification, explicit declaration
+- `uri`: `06-uri` parse/normalization behavior
+- `algorithm_registry`: `07-algorithm-registry` prefix parsing and tree algorithm handling
 - `signature`: Ed25519 verification over canonical JSON bytes
-- `uri`: CMN URI parse/normalization behavior
-- `merkle`: Merkle root behavior from a virtual file tree
+- `capsule`: Two-layer signature verification for authored vs hosted capsules
+- `key_rotation`: Domain key rollover trust behavior
+- `blob_tree_blake3_nfc`: Tree-root behavior from a virtual file tree
+- `bond_traversal`: BFS/DFS graph traversal over spore bonds
+- `taste_gating`: Operation-specific gating for spawn/grow/absorb/bond
 
-Passing all vectors indicates baseline protocol compatibility for these areas.
+`overview.md`, `glossary.md`, and `example.md` are non-normative/supporting
+documents, so they are not represented as standalone vector files.
+
+The authoritative machine-readable entry point is [`manifest.json`](./manifest.json). Every JSON file in [`vectors/`](./vectors/) MUST be listed there.
+
+Run the manifest integrity check before release or CI:
+
+```bash
+python3 check_manifest.py
+```
+
+Passing all manifest-listed vectors indicates baseline protocol compatibility for these areas.
 
 ## Vector Schema
 
@@ -53,7 +75,7 @@ For invalid input:
 }
 ```
 
-### `merkle` case
+### `blob_tree_blake3_nfc` case
 
 ```json
 {
@@ -80,4 +102,3 @@ For invalid input:
   "error_code": "filename_nfc_conflict"
 }
 ```
-

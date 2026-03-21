@@ -60,7 +60,7 @@ Implementations MAY provide an explicit override for sandboxed environments (e.g
 
 ## 4. Taste Capsule
 
-A taste report is a signed capsule submitted via `POST /synapse/pulse` using the [`taste.json`](https://cmn.dev/schemas/v1/taste.json) schema.
+A taste report is a signed capsule using the [`taste.json`](https://cmn.dev/schemas/v1/taste.json) schema. When shared through Synapse, the concrete submission and query interfaces are defined by the strains that Synapse node follows.
 
 ### 4.1 Format
 
@@ -72,6 +72,7 @@ A taste report is a signed capsule submitted via `POST /synapse/pulse` using the
     "core": {
       "target_uri": "cmn://cmn.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
       "domain": "bob.dev",
+      "key": "ed25519.5XmkQ9vZP8nL3xJdFtR7wNcA6sY2bKgU1eH9pXb4",
       "verdict": "safe",
       "notes": [],
       "tasted_at_epoch_ms": 1739280000000
@@ -89,6 +90,7 @@ A taste report is a signed capsule submitted via `POST /synapse/pulse` using the
 | `capsule.uri` | Content-addressed URI: `cmn://{domain}/taste/{hash}` |
 | `core.target_uri` | Full CMN URI of the target being tasted |
 | `core.domain` | Domain of the publisher submitting the report |
+| `core.key` | Taster's Ed25519 public key embedded in the signed core. Required for shared signed taste capsules; enables offline signature verification once key trust is established. |
 | `core.verdict` | Verdict from the 5-level scale: `sweet`, `fresh`, `safe`, `rotten`, `toxic` (§2) |
 | `core.notes` | Optional findings (e.g., `["eval() in src/init.rs:42"]`) |
 | `core.tasted_at_epoch_ms` | When the evaluation was performed (milliseconds since Unix epoch) |
@@ -124,9 +126,9 @@ The resulting URI: `cmn://{domain}/taste/b3.<base58>`
 
 To verify a taste report:
 
-1. Fetch the taster domain's `cmn.json` to obtain the public key
-2. Verify `core_signature` against the taster's public key (proves the taster authored this verdict)
-3. Verify `capsule_signature` against the host's public key (proves the host authorized this distribution)
+1. Verify `core_signature` against `capsule.core.key` locally
+2. Establish trust in `capsule.core.key` using the taster domain's `cmn.json` (or cached trust from a prior verification cycle)
+3. Verify `capsule_signature` against the host domain's public key
 4. Recompute the hash from `{core, core_signature}` and compare with the URI hash
 
 ## 6. Local vs Shared
@@ -141,15 +143,15 @@ Sharing taste reports with the network requires:
 
 1. A domain with an Ed25519 signing key
 2. Sign the taste capsule (§4.3)
-3. Submit via `POST /synapse/pulse`
+3. Submit through a Synapse node using one of its supported strain-defined interfaces
 
-Shared reports are indexed by Synapse and served to other visitors. Spore-target reports are available via `GET /synapse/spore/:hash/tastes`; domain/mycelium target reports are available via `GET /synapse/mycelium/:domain/tastes`. Reports are advisory — no global safety score is computed or enforced.
+Shared reports may be indexed by Synapse nodes and served to other visitors. The concrete query interfaces are defined by the strains that node follows. Reports are advisory — no global safety score is computed or enforced.
 
 ## 7. Trust Model
 
 CMN taste operates on a **subjective trust** model:
 
 - **No global authority** — there is no central entity that decides what is safe. Each visitor chooses which taster domains to trust and how to weigh their reports.
-- **Independent verification** — any visitor can fetch a taste report from a Synapse, then independently verify the taster's signature against the taster domain's public key. Trust in the Synapse is not required.
+- **Independent verification** — any visitor can fetch a taste report from a Synapse node, mirror, or other intermediary, then independently verify the taster's signature against the taster domain's public key. Trust in the intermediary is not required.
 - **Advisory only** — Synapse aggregates and serves taste reports but does not adjudicate. It does not compute global scores or enforce verdicts across visitors.
 - **Reputation is emergent** — over time, visitors learn which taster domains produce reliable evaluations. This is a social property, not a protocol mechanism.

@@ -2,7 +2,7 @@
   "$id": "https://cmn.dev/schemas/v1/taste.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "CMN Taste Report",
-  "description": "A signed evaluation of a spore or strain, submitted to Synapse via POST /synapse/pulse. Only publishers (domains with signing keys) can sign and submit taste reports. Verdicts use a 5-level taste scale: sweet (used it, endorsed), fresh (reviewed, clean), safe (quick scan, OK), rotten (unusable), toxic (dangerous). Processing: toxic blocks, rotten warns, others proceed.",
+  "description": "A signed evaluation of a domain, spore, or mycelium. Shared taste reports are signed by a domain and may be distributed through Synapse or other transports defined by followed strains. Verdicts use a 5-level taste scale: sweet (used it, endorsed), fresh (reviewed, clean), safe (quick scan, OK), rotten (unusable), toxic (dangerous). Processing: toxic blocks, rotten warns, others proceed.",
   "type": "object",
   "required": ["$schema", "capsule", "capsule_signature"],
   "properties": {
@@ -75,7 +75,7 @@
         "domain": {
           "type": "string",
           "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
-          "description": "Domain of the publisher submitting this report. Synapse verifies signatures against this domain's key from cmn.json."
+          "description": "Domain of the publisher submitting this report. Implementations establish trust in this domain's key through cmn.json."
         },
         "key": {
           "type": "string",
