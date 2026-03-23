@@ -16,9 +16,9 @@ The domain entry point (`cmn.json`) is documented in [01-substrate.md](./01-subs
   "capsule": {
     "uri": "cmn://cmn.dev/mycelium/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
     "core": {
-      "name": "cmn.dev",
       "domain": "cmn.dev",
       "key": "ed25519.5XmkQ9vZP8nL3xJdFtR7wNcA6sY2bKgU1eH9pXb4",
+      "name": "cmn.dev",
       "synopsis": "",
       "updated_at_epoch_ms": 1769777183174,
       "spores": [
@@ -59,10 +59,10 @@ The domain entry point (`cmn.json`) is documented in [01-substrate.md](./01-subs
 | `capsule.core.key` | String | Ed25519 public key of the content author. Enables offline signature verification once the key-domain binding is already trusted, without fetching `cmn.json`. |
 | `capsule.core.synopsis` | String | Brief description of the developer/org. |
 | `capsule.core.bio` | String? | Multiline markdown with full details about this domain. |
-| `capsule.core.nutrients` | Array? | Nutrient methods, ordered by preference (first = preferred). See §2.3. |
+| `capsule.core.nutrients` | Array | Nutrient methods, ordered by preference (first = preferred). Empty array if none. See §2.3. |
 | `capsule.core.updated_at_epoch_ms` | Number | Unix timestamp in milliseconds. Used for version ordering. |
 | `capsule.core.spores` | Array | List of published spores. |
-| `capsule.core.tastes` | Array? | Optional list of published taste reports (`{hash, target_uri}`) for mirror discovery and re-submission. |
+| `capsule.core.tastes` | Array | Published taste reports (`{hash, target_uri}`) for mirror discovery and re-submission. Empty array if none. |
 | `capsule.core_signature` | String | Ed25519 signature of the `core` object (`ed25519.<base58>`, JCS canonical). |
 | `capsule_signature` | String | Ed25519 signature of the `capsule` object (`ed25519.<base58>`, JCS canonical). |
 
@@ -149,7 +149,7 @@ The hash in `capsule.uri` is calculated from `core` + `core_signature`:
 1. Construct hash input: `{"core": <core>, "core_signature": "<signature>"}`
 2. Serialize hash input using JCS
 3. Hash with BLAKE3 → `b3.<base58>`
-4. The mycelium URI is `cmn://{domain}/mycelium/{hash}` (the hash is also stored in `cmn.json` as the `hash` field on the `type: "mycelium"` endpoint for change detection)
+4. The mycelium URI is `cmn://{domain}/mycelium/{hash}` (the hash is also stored in `cmn.json` as an element of the `hashes` array on the `type: "mycelium"` endpoint for change detection)
 
 **Key Properties:**
 - Changing any core field (name, synopsis, spores) changes the hash
@@ -183,7 +183,7 @@ All signatures and hashes use JCS (see [01-substrate §1.3](./01-substrate.md#1-
 5. Build `capsule` with uri, core, core_signature
 6. Sign capsule → `capsule_signature`
 7. Save full mycelium to `/cmn/mycelium/{hash}.json`
-8. Generate cmn.json capsule entry with endpoints (including `type: "mycelium"` with `hash`)
+8. Generate cmn.json capsule entry with endpoints (including `type: "mycelium"` with `hashes` array)
 9. Sign cmn.json capsules array → `capsule_signature`
 10. Save to `cmn.json`
 
@@ -205,20 +205,26 @@ site_root/
 
 ## 7. Content Resolution
 
-### 7.1 Hash Lookup
+### 7.1 Hash Lookup and Sharding
 
-The mycelium hash is stored in `cmn.json` as the `hash` field on the `type: "mycelium"` endpoint entry. Use this value from the domain entry point for change detection and content verification.
+The mycelium endpoint in `cmn.json` carries a `hashes` array. Each hash points to a mycelium shard. Most domains use a single shard.
+
+**Shard rules:**
+- Every shard is a valid `mycelium.json` (same schema, independently signed). All shards MUST have identical `name`, `domain`, `key`, and `synopsis` values — a mismatch is an error.
+- `hashes[0]` is authoritative for `nutrients` and `bio`. Other shards set `nutrients: []` and omit `bio`.
+- Each spore appears in exactly one shard. Clients merge `core.spores` from all shards.
+- Clients compare cached `hashes` against the live array — only changed hashes need re-fetching.
 
 ### 7.2 Mycelium Resolution
 
 When fetching the full mycelium content:
 
 Find the `type: "mycelium"` endpoint in `capsules[0].endpoints`:
-- Take its `hash` field
-- Replace `{hash}` in the endpoint's `url` template
+- For each hash in the `hashes` array, replace `{hash}` in the endpoint's `url` template
 - Example:
   - Hash = `b3.3yMR7vZQ9hL2x...pTa2`
   - URL = `https://cmn.dev/cmn/mycelium/b3.3yMR7vZQ9hL2x...pTa2.json`
+- Merge `core.spores` from all fetched shards into a single list
 
 If endpoints are missing, return an error - there are no default fallback URLs.
 
@@ -271,7 +277,7 @@ Publishing implementations MAY send a Pulse notification to one or more Synapse 
       "uri": "cmn://cmn.dev",
       "key": "ed25519.5XmkQ9vZP8nL3xJdFtR7wNcA6sY2bKgU1eH9pXb4",
       "endpoints": [
-        {"type": "mycelium", "url": "https://cmn.dev/cmn/mycelium/{hash}.json", "hash": "b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"},
+        {"type": "mycelium", "url": "https://cmn.dev/cmn/mycelium/{hash}.json", "hashes": ["b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"]},
         {"type": "spore",    "url": "https://cmn.dev/cmn/spore/{hash}.json"},
         {"type": "archive",  "url": "https://cmn.dev/cmn/archive/{hash}.tar.zst", "format": "tar+zstd"},
         {"type": "taste",    "url": "https://cmn.dev/cmn/taste/{hash}.json"}
@@ -282,7 +288,7 @@ Publishing implementations MAY send a Pulse notification to one or more Synapse 
 }
 ```
 
-**Client resolution:** Find the `type: "mycelium"` endpoint, take its `hash`, replace `{hash}` in its `url` template → fetch full mycelium.
+**Client resolution:** Find the `type: "mycelium"` endpoint, iterate its `hashes` array, replace `{hash}` in the `url` template for each → fetch each mycelium shard.
 
 **Full (`/cmn/mycelium/b3.3yMR7vZQ9hL2x...pTa2.json`):**
 ```json
@@ -291,9 +297,9 @@ Publishing implementations MAY send a Pulse notification to one or more Synapse 
   "capsule": {
     "uri": "cmn://cmn.dev/mycelium/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
     "core": {
-      "name": "cmn.dev",
       "domain": "cmn.dev",
       "key": "ed25519.5XmkQ9vZP8nL3xJdFtR7wNcA6sY2bKgU1eH9pXb4",
+      "name": "cmn.dev",
       "synopsis": "",
       "updated_at_epoch_ms": 1769777183174,
       "spores": [

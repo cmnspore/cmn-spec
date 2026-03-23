@@ -56,7 +56,15 @@ Normative behavior:
 
 Tasting itself downloads code to the global cache for review — this cache step is not gated.
 
-Implementations MAY provide an explicit override for sandboxed environments (e.g., containers) where code execution is isolated. If override is used, it SHOULD be explicit and auditable (for example, `taste_override_sandbox` in logs/output).
+### 3.1 Sandboxed Override
+
+When the execution environment provides verifiable isolation (container, WASM sandbox, VM), implementations MAY skip the taste gate entirely:
+
+- Untasted and `rotten` spores proceed without warning or verdict recording
+- `toxic` verdicts MUST still block — even in sandbox
+- The spore remains untasted after the sandbox session (no fake verdict is persisted)
+- All bypassed operations MUST emit a `taste_override_sandbox` trace event for auditability
+- Activated via explicit opt-in (e.g., `--sandbox` flag or `CMN_SANDBOX=1` environment variable)
 
 ## 4. Taste Capsule
 

@@ -26,13 +26,14 @@ The **Spore** is a **Logic Capsule**. It relies on its URI for identity and carr
         "§2.4 Bond Types: add optional reason field",
         "§1, §4.1, §6 example JSON updated"
       ],
+      "size_bytes": 142857,
+      "updated_at_epoch_ms": 1700000000000,
       "bonds": [],
       "tree": {
         "algorithm": "blob_tree_blake3_nfc",
         "exclude_names": [".git"],
         "follow_rules": [".gitignore"]
-      },
-      "updated_at_epoch_ms": 1700000000000
+      }
     },
     "core_signature": "ed25519.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa23yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
     "dist": [
@@ -63,8 +64,9 @@ The **Spore** is a **Logic Capsule**. It relies on its URI for identity and carr
 | `capsule.core.domain` | String | The domain of the publisher (e.g., `cmn.dev`). |
 | `capsule.core.key` | String | Author's Ed25519 public key (`ed25519.<base58>`). Embedded at release time — enables offline signature verification without fetching `cmn.json`. See [01-substrate §1.2.4](./01-substrate.md#1-2-4-key-trust-model) for trust model. |
 | `capsule.core.synopsis` | String | One-line summary — a visitor reads this alone and understands what the spore does. |
-| `capsule.core.intent` | Array | Multi-paragraph description of this spore's functionality and purpose — what it does, how it works, why it exists. Each array item is a paragraph. Permanent — not cleared on release. |
-| `capsule.core.mutations` | Array | What changed relative to the `spawned_from` parent — describes the mutations applied to derive this spore from its ancestor. |
+| `capsule.core.intent` | Array | The spore's reason for being — why it exists, what problem it solves, who it serves. Each array element is a paragraph. Permanent across releases — a reader understands the spore's purpose from intent alone, without reading source code. |
+| `capsule.core.mutations` | Array | What changed in this release relative to the `spawned_from` parent. Each entry is a concise change description — specific, factual, reviewable. Rewritten on each release. |
+| `capsule.core.size_bytes` | Number | Total uncompressed source size in bytes — sum of all blob content sizes from tree hash computation. Populated by release tooling, not present in `spore.core.json` draft. |
 | `capsule.core.license` | String | SPDX License Identifier. |
 | `capsule.core.bonds` | Array | List of `{uri, relation, id?, reason?}` (See §2.4 Bond Types). |
 | `capsule.core.tree` | Object | Tree hash configuration. |
@@ -119,24 +121,24 @@ Bonds declare relationships to other spores:
 {
   "bonds": [
     {
-      "uri": "cmn://cmn.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
-      "relation": "spawned_from"
+      "relation": "spawned_from",
+      "uri": "cmn://cmn.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"
     },
     {
-      "uri": "cmn://lib.dev/b3.8cQnH4xPmZ2vLkJdRt7wNbA9sF3eYgU1hK6pXq5",
       "relation": "depends_on",
+      "uri": "cmn://lib.dev/b3.8cQnH4xPmZ2vLkJdRt7wNbA9sF3eYgU1hK6pXq5",
       "id": "signing-lib",
       "reason": "Provides Ed25519 signature verification for spore manifests and domain key validation"
     },
     {
-      "uri": "cmn://cmn.dev/b3.8cQnH4xPmZ2vLkJdRt7wNbA9sF3eYgU1hK6pXq5",
       "relation": "follows",
+      "uri": "cmn://cmn.dev/b3.8cQnH4xPmZ2vLkJdRt7wNbA9sF3eYgU1hK6pXq5",
       "id": "agent-first-data",
       "reason": "Implements agent-first-data naming conventions for all field names"
     },
     {
-      "uri": "cmn://other.dev/b3.8cQnH4xPmZ2vLkJdRt7wNbA9sF3eYgU1hK6pXq5",
       "relation": "absorbed_from",
+      "uri": "cmn://other.dev/b3.8cQnH4xPmZ2vLkJdRt7wNbA9sF3eYgU1hK6pXq5",
       "reason": "Merged authentication module with OAuth and domain verification support"
     }
   ]
@@ -184,8 +186,8 @@ The optional `with` field carries bond-specific parameters whose schema is defin
 
 ```json
 {
-  "uri": "cmn://cmn.dev/b3.xxx",
   "relation": "follows",
+  "uri": "cmn://cmn.dev/b3.xxx",
   "id": "strain-payment-method-evm",
   "reason": "Accepts EVM payments",
   "with": {
@@ -207,13 +209,13 @@ The `with` value is an opaque object to the CMN protocol — its structure is de
 {
   "bonds": [
     {
-      "uri": "cmn://mydomain.com/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
       "relation": "depends_on",
+      "uri": "cmn://mydomain.com/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
       "reason": "Parsing library"
     },
     {
-      "uri": "cmn://mydomain.com/b3.8cQnH4xPmZ2vLkJdRt7wNbA9sF3eYgU1hK6pXq5",
       "relation": "implements",
+      "uri": "cmn://mydomain.com/b3.8cQnH4xPmZ2vLkJdRt7wNbA9sF3eYgU1hK6pXq5",
       "reason": "Agent-first-data naming conventions"
     }
   ]
@@ -270,7 +272,7 @@ The spore uses a **two-layer signature** scheme:
 │  ┌───────────────────────────────────────────────┐  │
 │  │ core (immutable)                              │  │
 │  │  name, domain, key, synopsis, intent,         │  │
-│  │  mutations, license, bonds, tree,             │  │
+│  │  mutations, size_bytes, license, bonds, tree, │  │
 │  │  updated_at_epoch_ms, id?, version?           │  │
 │  └───────────────────────────────────────────────┘  │
 │  core_signature ← signs core                        │
@@ -578,8 +580,8 @@ A **spawn** creates a new spore derived from an existing one (new domain, modifi
       "domain": "fork.dev",
       "bonds": [
         {
-          "uri": "cmn://cmn.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
-          "relation": "spawned_from"
+          "relation": "spawned_from",
+          "uri": "cmn://cmn.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"
         }
       ]
     },
@@ -597,7 +599,7 @@ A **spawn** creates a new spore derived from an existing one (new domain, modifi
 
 ## 7. spore.core.json
 
-Each spore source directory includes a `spore.core.json` file containing the author-maintained portion of `capsule.core` (§2.2). It does not contain `dist` or signatures — those are added during release. Publishing implementations MAY also populate derived core fields such as `key` and `updated_at_epoch_ms` during release if they are absent from the draft.
+Each spore source directory includes a `spore.core.json` file containing the author-maintained portion of `capsule.core` (§2.2). It does not contain `dist`, signatures, `size_bytes`, or `updated_at_epoch_ms` — those are computed and added during release. Publishing implementations also populate `key` during release if absent from the draft.
 
 **Schema:** `https://cmn.dev/schemas/v1/spore-core.json`
 
@@ -643,16 +645,16 @@ Each spore source directory includes a `spore.core.json` file containing the aut
   "domain": "cmn.dev",
   "synopsis": "Code Mycelial Network - A sovereign-first protocol for code distribution",
   "intent": ["add intent and changes array fields to spore core"],
+  "license": "CC0-1.0",
   "mutations": [
     "§2.2 Core Fields: intent type String → Array",
     "§2.2 Core Fields: add mutations field (Array)",
     "§1, §4.1, §6 example JSON updated"
   ],
-  "license": "CC0-1.0",
   "bonds": [
     {
-      "uri": "cmn://cmn.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
-      "relation": "spawned_from"
+      "relation": "spawned_from",
+      "uri": "cmn://cmn.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"
     }
   ],
   "tree": {
@@ -674,7 +676,7 @@ spore.core.json (local draft, committed to git)
 release implementation
      │
      ├── Read spore.core.json
-     ├── Compute Merkle Tree root hash (§4.6)
+     ├── Compute Merkle Tree root hash and size_bytes (§4.6)
      ├── Sign core → core_signature
      ├── Compute URI hash (§4.3)
      ├── Add dist endpoints
@@ -684,4 +686,4 @@ release implementation
 spore.json (signed, published, immutable)
 ```
 
-The `spore.core.json` file is the only file a developer edits directly. A release implementation reads it, fills any derived core fields that are still absent (for example `key`), adds computed fields (`dist`, signatures, URI), and produces the final `spore.json`.
+The `spore.core.json` file is the only file a developer edits directly. A release implementation reads it, populates `key` if absent, computes `size_bytes` and `updated_at_epoch_ms`, adds `dist`, signatures, and URI, and produces the final `spore.json`.

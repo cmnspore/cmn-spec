@@ -3,7 +3,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "CMN Domain Entry Point",
   "type": "object",
-  "required": ["$schema", "capsules", "capsule_signature"],
+  "required": ["$schema", "capsules", "protocol_versions", "capsule_signature"],
   "properties": {
     "$schema": {
       "const": "https://cmn.dev/schemas/v1/cmn.json"
@@ -22,7 +22,7 @@
       },
       "minItems": 1,
       "uniqueItems": true,
-      "description": "Protocol versions supported by this domain (e.g. [\"v1\"]). If absent, consumers MUST assume [\"v1\"]."
+      "description": "Protocol versions supported by this domain (e.g. [\"v1\"])."
     },
     "capsule_signature": {
       "$ref": "#/$defs/signature",
@@ -33,7 +33,7 @@
   "$defs": {
     "capsule_entry": {
       "type": "object",
-      "required": ["uri", "key"],
+      "required": ["uri", "key", "previous_keys", "endpoints"],
       "properties": {
         "uri": {
           "type": "string",
@@ -47,12 +47,12 @@
         },
         "previous_keys": {
           "type": "array",
-          "description": "Optional retired keys for verifying historical content signed before key rotation",
+          "description": "Retired keys for verifying historical content signed before key rotation. Empty array if no key rotation has occurred.",
           "items": { "$ref": "#/$defs/previous_key" }
         },
         "endpoints": {
           "$ref": "#/$defs/endpoints",
-          "description": "Typed array of endpoint definitions. Optional — taste-only domains MAY omit endpoints or provide only a taste endpoint."
+          "description": "Typed array of endpoint definitions. Taste-only domains provide only a taste endpoint."
         }
       },
       "additionalProperties": true
@@ -101,9 +101,14 @@
       "pattern": "^[a-z0-9][a-z0-9._-]*$",
       "description": "Endpoint type identifier (e.g., mycelium, spore, archive, taste)"
     },
+    "protocol_version": {
+      "type": "string",
+      "pattern": "^v[0-9]+$",
+      "description": "Protocol version this endpoint serves (e.g. \"v1\"). Defaults to \"v1\" when absent."
+    },
     "endpoint_mycelium": {
       "type": "object",
-      "required": ["type", "url", "hash"],
+      "required": ["type", "url", "hashes"],
       "properties": {
         "type": { "const": "mycelium" },
         "url": {
@@ -111,10 +116,13 @@
           "pattern": "\\{hash\\}",
           "description": "Template URL for fetching mycelium, e.g. https://example.com/cmn/mycelium/{hash}.json"
         },
-        "hash": {
-          "$ref": "#/$defs/content_hash",
-          "description": "Content hash of the current mycelium manifest. Used for change detection."
-        }
+        "hashes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/content_hash" },
+          "minItems": 1,
+          "description": "Content hashes of the current mycelium shards. Each hash points to an independent mycelium chunk. Used for change detection."
+        },
+        "protocol_version": { "$ref": "#/$defs/protocol_version" }
       },
       "additionalProperties": true
     },
@@ -127,7 +135,8 @@
           "type": "string",
           "pattern": "\\{hash\\}",
           "description": "Template URL for fetching spores, e.g. https://example.com/cmn/spore/{hash}.json"
-        }
+        },
+        "protocol_version": { "$ref": "#/$defs/protocol_version" }
       },
       "additionalProperties": true
     },
@@ -149,7 +158,8 @@
           "type": "string",
           "pattern": "(?=.*\\{hash\\})(?=.*\\{old_hash\\})",
           "description": "Optional template URL for archive deltas. MUST include {hash} (target) and {old_hash} (cached base). Direction is old_hash -> hash."
-        }
+        },
+        "protocol_version": { "$ref": "#/$defs/protocol_version" }
       },
       "additionalProperties": true
     },
@@ -162,7 +172,8 @@
           "type": "string",
           "pattern": "\\{hash\\}",
           "description": "Template URL for fetching taste reports, e.g. https://example.com/cmn/taste/{hash}.json"
-        }
+        },
+        "protocol_version": { "$ref": "#/$defs/protocol_version" }
       },
       "additionalProperties": true
     },
@@ -181,7 +192,8 @@
           "type": "string",
           "minLength": 1,
           "description": "Template URL for this endpoint type"
-        }
+        },
+        "protocol_version": { "$ref": "#/$defs/protocol_version" }
       },
       "additionalProperties": true
     },

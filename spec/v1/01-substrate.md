@@ -50,7 +50,7 @@ Using `.well-known` makes CMN discoverable via standard Web infrastructure, comp
       "uri": "cmn://cmn.dev",
       "key": "ed25519.5XmkQ9vZP8nL3xJdFtR7wNcA6sY2bKgU1eH9pXb4",
       "endpoints": [
-        {"type": "mycelium", "url": "https://cmn.dev/cmn/mycelium/{hash}.json", "hash": "b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"},
+        {"type": "mycelium", "url": "https://cmn.dev/cmn/mycelium/{hash}.json", "hashes": ["b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"]},
         {"type": "spore",    "url": "https://cmn.dev/cmn/spore/{hash}.json"},
         {"type": "archive",  "url": "https://cmn.dev/cmn/archive/{hash}.tar.zst", "format": "tar+zstd",
                              "delta_url": "https://cmn.dev/cmn/archive/{hash}.from.{old_hash}.tar.zst"},
@@ -70,15 +70,15 @@ Using `.well-known` makes CMN discoverable via standard Web infrastructure, comp
 | `capsules` | Array | Array of capsule entries. First entry (`capsules[0]`) is the domain's own capsule; additional entries are replicated capsules from other domains. |
 | `capsules[].uri` | String | Domain URI of the capsule origin: `cmn://{origin_domain}`. The first entry (`capsules[0]`) is always this host domain. |
 | `capsules[].key` | String | Ed25519 public key of the entry's origin domain in `{algorithm}.{base58}` format. |
-| `capsules[].previous_keys` | Array? | Optional. Retired public keys for verifying historical content (see [§1.2.3](#1-2-3-key-rotation)). |
-| `capsules[].endpoints` | Array? | Optional typed array of endpoint definitions. Each entry has a `type` field (`mycelium`, `spore`, `archive`, `taste`, or extension types). Taste-only domains MAY omit endpoints entirely. |
+| `capsules[].previous_keys` | Array | Retired public keys for verifying historical content (see [§1.2.3](#1-2-3-key-rotation)). Empty array if no key rotation has occurred. |
+| `capsules[].endpoints` | Array | Typed array of endpoint definitions. Each entry has a `type` field (`mycelium`, `spore`, `archive`, `taste`, or extension types). Taste-only domains provide only a taste endpoint. |
 | `capsule_signature` | String | Ed25519 signature of the `capsules` array, verified with `capsules[0].key` (format: `ed25519.<base58>`, JCS canonical). |
 
 **Endpoint types:**
 
 | Type | Required fields | Description |
 |------|----------------|-------------|
-| `mycelium` | `url`, `hash` | Mycelium manifest. `hash` is the current mycelium content hash for change detection. `url` template includes `{hash}`. |
+| `mycelium` | `url`, `hashes` | Mycelium manifest. `hashes` is an array of content hashes for the mycelium shards (typically one element). Used for change detection. `url` template includes `{hash}`. |
 | `spore` | `url` | Spore manifests. `url` template includes `{hash}`. |
 | `archive` | `url`, `format` | Archive downloads. `url` template includes `{hash}` (the template itself carries the file extension). Optional `delta_url` includes `{hash}` and `{old_hash}`. Multiple archive entries with different formats are allowed. |
 | `taste` | `url` | Taste reports. `url` template includes `{hash}`. |
@@ -102,6 +102,16 @@ The `key` is inside each capsule entry, so the `capsule_signature` covers the ke
 - HTTPS with valid TLS certificate proves domain ownership
 - TLS certificate chain provides authentication (CA-signed)
 - Certificate Transparency logs provide auditability
+
+**Cross-Origin Access (CORS):**
+
+CMN endpoints are public resources designed for any client — including web browsers. Domains MUST serve all CMN endpoints (`cmn.json`, mycelium, spore, archive, taste) with the following HTTP response header:
+
+```
+Access-Control-Allow-Origin: *
+```
+
+This is consistent with other `.well-known` standards (OpenID Connect, Nostr) that serve public discovery documents. Without CORS headers, browser-based CMN clients cannot function due to the same-origin policy.
 
 #### 1.2.2 Identity Verification Flow
 
@@ -134,7 +144,7 @@ Domains MAY rotate their Ed25519 key at any time by updating `cmn.json` with a n
         { "key": "ed25519.OLD_KEY_BASE58", "retired_at_epoch_ms": 1772000000000 }
       ],
       "endpoints": [
-        {"type": "mycelium", "url": "https://example.com/cmn/mycelium/{hash}.json", "hash": "b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"},
+        {"type": "mycelium", "url": "https://example.com/cmn/mycelium/{hash}.json", "hashes": ["b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"]},
         {"type": "spore",    "url": "https://example.com/cmn/spore/{hash}.json"},
         {"type": "archive",  "url": "https://example.com/cmn/archive/{hash}.tar.zst", "format": "tar+zstd"},
         {"type": "taste",    "url": "https://example.com/cmn/taste/{hash}.json"}
@@ -270,7 +280,7 @@ The URI is the **primary key** for all entities:
 **Properties:**
 - Domain identifies the publisher (or taster, for taste reports)
 - Hash ensures content integrity (content-addressed)
-- Use the `hash` field on the `type: "mycelium"` endpoint in `cmn.json` for change detection
+- Use the `hashes` array on the `type: "mycelium"` endpoint in `cmn.json` for change detection
 
 For detailed URI specification, see [06-uri.md](./06-uri.md).
 
@@ -305,7 +315,7 @@ Each capsule entry in `cmn.json` contains a typed endpoint array. Replicators ca
       "uri": "cmn://example.com",
       "key": "ed25519...",
       "endpoints": [
-        {"type": "mycelium", "url": "https://cdn.example.com/cmn/mycelium/{hash}.json", "hash": "b3..."},
+        {"type": "mycelium", "url": "https://cdn.example.com/cmn/mycelium/{hash}.json", "hashes": ["b3..."]},
         {"type": "spore",    "url": "https://cdn.example.com/cmn/spore/{hash}.json"},
         {"type": "archive",  "url": "https://cdn.example.com/cmn/archive/{hash}.tar.zst", "format": "tar+zstd",
                              "delta_url": "https://cdn.example.com/cmn/archive/{hash}.from.{old_hash}.tar.zst"},
@@ -440,7 +450,7 @@ The protocol version lives in the `$schema` URL path, for example `https://cmn.d
 
 ### 6.1 Version Negotiation
 
-Domains MAY advertise supported protocol versions in `cmn.json`:
+Domains MUST declare supported protocol versions in `cmn.json`:
 
 ```json
 {
@@ -449,7 +459,7 @@ Domains MAY advertise supported protocol versions in `cmn.json`:
 }
 ```
 
-Consumers SHOULD use the highest mutually-supported version. If `protocol_versions` is absent, consumers MUST assume `["v1"]`.
+Consumers SHOULD use the highest mutually-supported version.
 
 ### 6.2 Migration Rules
 

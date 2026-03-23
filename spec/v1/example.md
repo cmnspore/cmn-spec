@@ -45,8 +45,8 @@ This produces `spore.core.json`:
   "domain": "cmn.dev",
   "synopsis": "Code Mycelial Network - A sovereign-first protocol for code distribution",
   "intent": ["initial release of protocol spec"],
-  "mutations": [],
   "license": "CC0-1.0",
+  "mutations": [],
   "bonds": [],
   "tree": {
     "algorithm": "blob_tree_blake3_nfc",
@@ -66,7 +66,7 @@ hypha release --domain cmn.dev
 
 In this example, the publishing tool:
 1. Reads `spore.core.json`
-2. Computes Merkle Tree root hash from tree content (BLAKE3)
+2. Computes Merkle Tree root hash and `size_bytes` from tree content (BLAKE3)
 3. Signs `core` with Ed25519 → `core_signature`
 4. Constructs the hash input: `{"tree_hash":"<merkle_root>","core":<core>,"core_signature":"<sig>"}`
 5. Computes final hash → `b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2`
@@ -74,7 +74,7 @@ In this example, the publishing tool:
 7. Signs `capsule` → `capsule_signature`
 8. Writes `spore.json` to site's `public/cmn/spore/` directory
 9. Updates `mycelium.json` with new spore entry
-10. Updates `cmn.json` capsule entry with new mycelium hash
+10. Updates `cmn.json` capsule entry with new mycelium hashes
 
 **Resulting `cmn.json`:**
 
@@ -86,7 +86,7 @@ In this example, the publishing tool:
       "uri": "cmn://cmn.dev",
       "key": "ed25519.5XmkQ9vZP8nL3xJdFtR7wNcA6sY2bKgU1eH9pXb4",
       "endpoints": [
-        {"type": "mycelium", "url": "https://cmn.dev/cmn/mycelium/{hash}.json", "hash": "b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"},
+        {"type": "mycelium", "url": "https://cmn.dev/cmn/mycelium/{hash}.json", "hashes": ["b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"]},
         {"type": "spore",    "url": "https://cmn.dev/cmn/spore/{hash}.json"},
         {"type": "archive",  "url": "https://cmn.dev/cmn/archive/{hash}.tar.zst", "format": "tar+zstd"},
         {"type": "taste",    "url": "https://cmn.dev/cmn/taste/{hash}.json"}
@@ -105,9 +105,9 @@ In this example, the publishing tool:
   "capsule": {
     "uri": "cmn://cmn.dev/mycelium/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
     "core": {
-      "name": "cmn.dev",
       "domain": "cmn.dev",
       "key": "ed25519.5XmkQ9vZP8nL3xJdFtR7wNcA6sY2bKgU1eH9pXb4",
+      "name": "cmn.dev",
       "synopsis": "",
       "updated_at_epoch_ms": 1769777183174,
       "spores": [
@@ -277,12 +277,12 @@ Bob now has a working copy with lineage:
   "domain": "cmn.dev",
   "synopsis": "Code Mycelial Network - A sovereign-first protocol for code distribution",
   "intent": [],
-  "mutations": [],
   "license": "CC0-1.0",
+  "mutations": [],
   "bonds": [
     {
-      "uri": "cmn://cmn.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
-      "relation": "spawned_from"
+      "relation": "spawned_from",
+      "uri": "cmn://cmn.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"
     }
   ],
   "tree": {
@@ -320,12 +320,13 @@ Bob's `spore.json` now has a different hash (because core changed) and traces ba
       "domain": "bob.dev",
       "synopsis": "Code Mycelial Network - A sovereign-first protocol for code distribution",
       "intent": ["add examples for edge cases"],
-      "mutations": ["Added §3 edge case examples"],
       "license": "CC0-1.0",
+      "mutations": ["Added §3 edge case examples"],
+      "size_bytes": 98304,
       "bonds": [
         {
-          "uri": "cmn://cmn.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
-          "relation": "spawned_from"
+          "relation": "spawned_from",
+          "uri": "cmn://cmn.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"
         }
       ],
       "tree": {

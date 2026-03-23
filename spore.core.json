@@ -2,7 +2,7 @@
   "$schema": "https://cmn.dev/schemas/v1/spore-core.json",
   "id": "cmn-spec",
   "name": "Code Mycelial Network Specification",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "domain": "cmn.dev",
   "key": "ed25519.7BmCWmBb2YeUWR7pmHvwAvi9wRm96VpZsJvZFSTfc2Uu",
   "synopsis": "Code Mycelial Network (CMN) specification — normative documents, JSON schemas, and conformance test vectors for sovereign code distribution",
@@ -10,17 +10,20 @@
     "Provide the complete normative specification for the Code Mycelial Network protocol — seven chapters covering Substrate (discovery & identity), Mycelium (domain manifest), Spore (package format), Taste (safety evaluation), Strain (conventions), URI (addressing), and Algorithm Registry",
     "Ship machine-readable JSON Schema definitions (cmn.json, mycelium.json, spore-core.json, spore.json, taste.json) for validating all protocol artifacts, plus conformance test vectors (merkle, signature, uri, capsule, taste gating, key rotation, bond traversal) so implementers can verify correctness without reading prose"
   ],
-  "mutations": [
-    "Version all release bundles under v1/ paths — spec prose, JSON schemas, and conformance vectors now share a common version segment so they can be pinned together",
-    "Expand conformance coverage to all normative chapters — add substrate, mycelium, spore, strain, and algorithm_registry vector files with a manifest integrity checker (check_manifest.py)",
-    "Tighten id and key semantics — spore and bond id fields are now opaque (consumers MUST NOT use raw id as filesystem paths), key field is optional in spore.core.json (populated at release time if absent)",
-    "Rewrite 05-strain as a reference convention pattern — strains are now described as shared conventions built on top of CMN rather than enforceable contracts"
-  ],
   "license": "CC0-1.0",
+  "mutations": [
+    "Restructure spore.json schema — split $defs/spore_core into draft-matching base (spore_core) and release overlay (spore_core_released), ensuring the draft and published schemas share a single source of truth for shared fields",
+    "Tighten schema required fields — make previous_keys and endpoints required in cmn.json capsules, notes optional in taste core, synopsis optional in mycelium spore entries",
+    "Rename mycelium endpoint hash to hashes array — supports multi-shard mycelium with an array of content hashes instead of a single hash string",
+    "Add CORS requirement — domains MUST serve all CMN endpoints with Access-Control-Allow-Origin: * for browser-based clients",
+    "Require protocol_versions in cmn.json — upgrade from MAY to MUST, remove the implicit v1 default assumption",
+    "Add size_bytes and updated_at_epoch_ms to spore conformance vectors, add protocol_versions and previous_keys to substrate vectors",
+    "Canonicalize JSON key ordering in all conformance vectors and spec examples to match the substrate model layer ordering"
+  ],
   "bonds": [
     {
       "relation": "follows",
-      "uri": "cmn://cmn.dev/b3.HZaxMbpz26kNpH5GPG7pYH94xuEogVToxCiCivV3oCb6",
+      "uri": "cmn://cmn.dev/b3.Efs1WSGxQWwJwyWULvayeSJCX9eff5CXaweotRZBLcqk",
       "id": "agent-first-data",
       "reason": "Uses agent-first-data naming conventions for all field names (e.g., updated_at_epoch_ms, cost_msats, created_at_epoch_s)"
     },

@@ -95,6 +95,12 @@ Why explicit:
 1. Indexers such as Synapse can index direct `follows` bonds without recursive inference. If the parent bond is missing, the spore is invisible to searches for that parent strain.
 2. Consumers can read one spore's bonds and see its full interface contract without recursively resolving strain inheritance.
 
+### 3.4 Conformance Checking is Non-Recursive
+
+When checking a spore's `follows` declarations, a taster evaluates each declared strain independently. Checking is never recursive — the taster does not follow the strain's own `follows` bonds or walk up the hierarchy.
+
+If a spore declares `follows: [strain-synapse-search]`, only `strain-synapse-search`'s convention is checked. The taster does not also check `strain-synapse`'s convention — that is only checked if the spore explicitly declares `follows: [strain-synapse]`.
+
 ## 4. Conformance
 
 ### 4.1 The follows Contract

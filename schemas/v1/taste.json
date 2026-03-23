@@ -91,7 +91,7 @@
           "type": "array",
           "items": { "type": "string" },
           "default": [],
-          "description": "Optional findings (e.g., 'eval() in src/init.rs:42')"
+          "description": "Findings from the evaluation (e.g., 'eval() in src/init.rs:42'). Empty array if no specific findings."
         },
         "tasted_at_epoch_ms": {
           "type": "integer",

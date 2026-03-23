@@ -13,7 +13,7 @@
       "required": ["uri", "core", "core_signature", "dist"],
       "properties": {
         "uri": { "$ref": "#/$defs/cmn_uri" },
-        "core": { "$ref": "#/$defs/spore_core" },
+        "core": { "$ref": "#/$defs/spore_core_released" },
         "core_signature": { "$ref": "#/$defs/signature" },
         "dist": { "$ref": "#/$defs/dist_array" }
       },
@@ -46,7 +46,7 @@
     },
     "spore_core": {
       "type": "object",
-      "required": ["name", "domain", "synopsis", "intent", "license", "tree"],
+      "required": ["name", "synopsis", "intent", "license", "mutations", "bonds", "tree"],
       "properties": {
         "id": {
           "type": "string",
@@ -69,14 +69,53 @@
         },
         "synopsis": { "type": "string", "description": "One-line summary — agent reads this alone and understands what the spore does" },
         "intent": { "type": "array", "items": { "type": "string" }, "description": "Multi-paragraph description of this spore's functionality and purpose — what it does, how it works, why it exists. Each array item is a paragraph. Permanent, not cleared on release." },
-        "mutations": { "type": "array", "items": { "type": "string" }, "default": [], "description": "What changed relative to the spawned_from parent — describes the mutations applied to derive this spore from its ancestor." },
         "license": { "$ref": "#/$defs/spdx_expression_simple" },
+        "mutations": { "type": "array", "items": { "type": "string" }, "default": [], "description": "What changed relative to the spawned_from parent — describes the mutations applied to derive this spore from its ancestor." },
+        "size_bytes": false,
+        "updated_at_epoch_ms": false,
         "bonds": {
           "type": "array",
           "items": { "$ref": "#/$defs/bond" }
         },
-        "tree": { "$ref": "#/$defs/tree" },
-        "updated_at_epoch_ms": { "type": "integer", "minimum": 0, "description": "Content update timestamp (milliseconds since Unix epoch). Recommended source: latest Git commit time for the source tree, with max file mtime as fallback." }
+        "tree": { "$ref": "#/$defs/tree" }
+      },
+      "additionalProperties": true
+    },
+    "spore_core_released": {
+      "description": "Published spore core — the full spore_core as it appears in a released spore.json. Adds domain, key, size_bytes, updated_at_epoch_ms as required fields with proper type definitions (these are forbidden in the draft spore.core.json).",
+      "type": "object",
+      "required": ["name", "domain", "key", "synopsis", "intent", "license", "mutations", "size_bytes", "updated_at_epoch_ms", "bonds", "tree"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Opaque publisher-defined identifier. Consumers MUST treat raw id as opaque and MUST NOT use it directly as a filesystem path, shell token, or URL path segment. If a local-safe derivation is unsafe or collides, implementations MUST fall back to the spore hash."
+        },
+        "version": {
+          "type": "string",
+          "description": "Human-readable version string (e.g., 1.0.0). Optional."
+        },
+        "name": { "type": "string", "minLength": 1, "description": "Human-readable display name" },
+        "domain": {
+          "type": "string",
+          "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "key": {
+          "type": "string",
+          "pattern": "^ed25519\\.[1-9A-HJ-NP-Za-km-z]+$",
+          "description": "Author's Ed25519 public key. Publishing implementations populate this from the current signing domain identity during release."
+        },
+        "synopsis": { "type": "string", "description": "One-line summary — agent reads this alone and understands what the spore does" },
+        "intent": { "type": "array", "items": { "type": "string" }, "description": "Multi-paragraph description of this spore's functionality and purpose — what it does, how it works, why it exists. Each array item is a paragraph. Permanent, not cleared on release." },
+        "license": { "$ref": "#/$defs/spdx_expression_simple" },
+        "mutations": { "type": "array", "items": { "type": "string" }, "default": [], "description": "What changed relative to the spawned_from parent — describes the mutations applied to derive this spore from its ancestor." },
+        "size_bytes": { "type": "integer", "minimum": 0, "description": "Total uncompressed source size in bytes — sum of all blob content sizes from tree hash computation. Populated by release tooling, not present in spore.core.json draft." },
+        "updated_at_epoch_ms": { "type": "integer", "minimum": 0, "description": "Content update timestamp (milliseconds since Unix epoch). Recommended source: latest Git commit time for the source tree, with max file mtime as fallback." },
+        "bonds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/bond" }
+        },
+        "tree": { "$ref": "#/$defs/tree" }
       },
       "additionalProperties": true
     },
@@ -109,7 +148,7 @@
     },
     "tree": {
       "type": "object",
-      "required": ["algorithm"],
+      "required": ["algorithm", "exclude_names", "follow_rules"],
       "properties": {
         "algorithm": { "type": "string", "description": "Tree hash algorithm (e.g., blob_tree_blake3_nfc)" },
         "exclude_names": { "type": "array", "items": { "type": "string" } },

@@ -17,18 +17,20 @@
             "intent": ["Defines search behavior"],
             "license": "MIT",
             "mutations": ["Added search endpoint requirements"],
+            "size_bytes": 24576,
+            "updated_at_epoch_ms": 1700000000000,
             "bonds": [
               {
-                "uri": "cmn://root.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
-                "relation": "follows"
-              },
-              {
-                "uri": "cmn://parent.dev/b3.Bp7WKXh4Rxx2jyu5taj2aeMorH5YLT4R8DF5rWq7jZjq",
-                "relation": "spawned_from"
-              },
-              {
-                "uri": "cmn://strain.dev/b3.7kLmN2pQrS4tUvWx8yZaB3cD5eF6gH9iJ1kL2mN3o",
                 "relation": "follows",
+                "uri": "cmn://root.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"
+              },
+              {
+                "relation": "spawned_from",
+                "uri": "cmn://parent.dev/b3.Bp7WKXh4Rxx2jyu5taj2aeMorH5YLT4R8DF5rWq7jZjq"
+              },
+              {
+                "relation": "follows",
+                "uri": "cmn://strain.dev/b3.7kLmN2pQrS4tUvWx8yZaB3cD5eF6gH9iJ1kL2mN3o",
                 "id": "strain-parent",
                 "reason": "Child strain inherits parent requirements"
               }
@@ -37,8 +39,7 @@
               "algorithm": "blob_tree_blake3_nfc",
               "exclude_names": [".git"],
               "follow_rules": [".gitignore"]
-            },
-            "updated_at_epoch_ms": 1700000000000
+            }
           },
           "core_signature": "ed25519.2516gWpCkSrPZCyGf9THtxuv6Fq7hEPxdbM5CT6mCvBN2bUMcZ8d6xv7vjAFuBervBpPpBLZUj4i7ZtkSrF1onXt",
           "dist": [
@@ -56,10 +57,12 @@
       },
       "cmn": {
         "$schema": "https://cmn.dev/schemas/v1/cmn.json",
+        "protocol_versions": ["v1"],
         "capsules": [
           {
             "uri": "cmn://example.com",
             "key": "ed25519.9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+            "previous_keys": [],
             "endpoints": [
               {
                 "type": "archive",
@@ -105,11 +108,14 @@
             "intent": ["Ships content via custom transports"],
             "license": "Apache-2.0",
             "mutations": [],
+            "size_bytes": 8192,
+            "updated_at_epoch_ms": 1705000000000,
             "bonds": [],
             "tree": {
-              "algorithm": "blob_tree_blake3_nfc"
-            },
-            "updated_at_epoch_ms": 1705000000000
+              "algorithm": "blob_tree_blake3_nfc",
+              "exclude_names": [],
+              "follow_rules": []
+            }
           },
           "core_signature": "ed25519.2516gWpCkSrPZCyGf9THtxuv6Fq7hEPxdbM5CT6mCvBN2bUMcZ8d6xv7vjAFuBervBpPpBLZUj4i7ZtkSrF1onXt",
           "dist": [

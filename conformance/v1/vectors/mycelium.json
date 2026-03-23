@@ -9,9 +9,9 @@
         "capsule": {
           "uri": "cmn://cmn.dev/mycelium/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
           "core": {
-            "name": "cmn.dev",
             "domain": "cmn.dev",
             "key": "ed25519.9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+            "name": "cmn.dev",
             "synopsis": "CMN home domain",
             "bio": "CMN reference publisher",
             "nutrients": [
@@ -37,7 +37,8 @@
               {
                 "id": "cmn-tools",
                 "hash": "b3.BMjugPDk6SFJiCLvTTWJtbD6LxSmhw6KBbXQh7Lixv5W",
-                "name": "CMN Tools"
+                "name": "CMN Tools",
+                "synopsis": "CMN developer tools"
               }
             ],
             "tastes": [
@@ -71,18 +72,21 @@
         "capsule": {
           "uri": "cmn://alice.dev/mycelium/b3.Bp7WKXh4Rxx2jyu5taj2aeMorH5YLT4R8DF5rWq7jZjq",
           "core": {
-            "name": "alice.dev",
             "domain": "alice.dev",
             "key": "ed25519.CJfRUQxyonG6B5mnztsNUqxknbFT89DJdrdrzV9F96mU",
+            "name": "alice.dev",
             "synopsis": "Alice publisher domain",
+            "nutrients": [],
             "updated_at_epoch_ms": 1760000000000,
             "spores": [
               {
                 "id": "alice-cli",
                 "hash": "b3.7kLmN2pQrS4tUvWx8yZaB3cD5eF6gH9iJ1kL2mN3o",
-                "name": "Alice CLI"
+                "name": "Alice CLI",
+                "synopsis": "Alice command-line tool"
               }
-            ]
+            ],
+            "tastes": []
           },
           "core_signature": "ed25519.2516gWpCkSrPZCyGf9THtxuv6Fq7hEPxdbM5CT6mCvBN2bUMcZ8d6xv7vjAFuBervBpPpBLZUj4i7ZtkSrF1onXt"
         },

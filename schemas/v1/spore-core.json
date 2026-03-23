@@ -4,7 +4,7 @@
   "title": "CMN Spore Core",
   "description": "Schema for spore.core.json — the local draft metadata file maintained in a source repository and used to produce the final spore.json manifest at release time.",
   "type": "object",
-  "required": ["name", "domain", "synopsis", "intent", "license", "tree"],
+  "required": ["$schema", "name", "synopsis", "intent", "license", "mutations", "bonds", "tree"],
   "properties": {
     "$schema": {
       "const": "https://cmn.dev/schemas/v1/spore-core.json"
@@ -30,14 +30,15 @@
     },
     "synopsis": { "type": "string", "description": "One-line summary — agent reads this alone and understands what the spore does" },
     "intent": { "type": "array", "items": { "type": "string" }, "description": "Multi-paragraph description of this spore's functionality and purpose — what it does, how it works, why it exists. Each array item is a paragraph. Permanent, not cleared on release." },
-    "mutations": { "type": "array", "items": { "type": "string" }, "default": [], "description": "What changed relative to the spawned_from parent — describes the mutations applied to derive this spore from its ancestor." },
     "license": { "$ref": "#/$defs/spdx_expression_simple" },
+    "mutations": { "type": "array", "items": { "type": "string" }, "default": [], "description": "What changed relative to the spawned_from parent — describes the mutations applied to derive this spore from its ancestor." },
+    "size_bytes": false,
+    "updated_at_epoch_ms": false,
     "bonds": {
       "type": "array",
       "items": { "$ref": "#/$defs/bond" }
     },
-    "tree": { "$ref": "#/$defs/tree" },
-    "updated_at_epoch_ms": { "type": "integer", "minimum": 0, "description": "Content update timestamp (milliseconds since Unix epoch). Recommended source: latest Git commit time for the source tree, with max file mtime as fallback." }
+    "tree": { "$ref": "#/$defs/tree" }
   },
   "additionalProperties": true,
   "$defs": {
@@ -81,7 +82,7 @@
     },
     "tree": {
       "type": "object",
-      "required": ["algorithm"],
+      "required": ["algorithm", "exclude_names", "follow_rules"],
       "properties": {
         "algorithm": { "type": "string", "description": "Tree hash algorithm (e.g., blob_tree_blake3_nfc)" },
         "exclude_names": { "type": "array", "items": { "type": "string" } },
