@@ -159,22 +159,19 @@ Bonds declare relationships to other spores:
 
 - **`spawned_from`** — Source this spore was cloned/derived from. The URI includes the hash of the version spawned from.
 - **`absorbed_from`** — Source that was merged into this spore. Unlike `spawned_from`, represents a one-time merge. A spore can have multiple `absorbed_from` bonds.
-- **`depends_on`** — Runtime or build dependency required by this spore.
+- **`depends_on`** — Runtime, build, or protocol dependency required by this spore.
 - **`follows`** — Convention or standard that this spore adheres to (e.g., data format conventions, API guidelines).
-- **`implements`** — Specification or interface that this spore provides a concrete implementation of.
-- **`inspired_by`** — Spores that influenced or inspired this work, for attribution and lineage tracking.
-- **`related_to`** — General relationship.
+- **`extends`** — Direct parent convention or family relationship declared by this spore. Used for explicit, non-transitive hierarchy between strain definitions. See [05-strain](./05-strain.md).
 
-> **Note**: Custom relation types are allowed. The predefined types provide semantic meaning for tooling, but any string value is valid.
-> **Naming guidance (non-enforced):** Use namespaced relation names for custom values to avoid collisions (e.g., `example.com/deploys_to` or `org.example.deploys_to`). Predefined names above are reserved by the protocol.
+> **Note**: Custom relation types are allowed (the `relation` field accepts any string). The predefined types above provide semantic meaning for tooling. For custom values, namespaced names are recommended to avoid collisions (e.g., `example.com/deploys_to`).
 
 **The `reason` field:**
 
 The optional `reason` field explains why this bond exists from the bonding spore's perspective. It is most useful for:
-- **`depends_on`** - Explains what role the dependency plays (e.g., "Provides cryptographic signing")
-- **`follows`** - Describes which parts of the convention are implemented (e.g., "Implements payment protocol with Cashu support")
-- **`implements`** - Clarifies what portion of the specification is provided (e.g., "Provides MCP server implementation")
-- **`absorbed_from`** - Explains what was merged (e.g., "Merged authentication module")
+- **`depends_on`** — what role the dependency plays (e.g., "Provides cryptographic signing")
+- **`follows`** — which parts of the convention are implemented (e.g., "Implements payment protocol with Cashu support")
+- **`extends`** — the direct parent relationship (e.g., "Extends strain-payment-method")
+- **`absorbed_from`** — what was merged (e.g., "Merged authentication module")
 
 **Note:** `spawned_from` typically does NOT need `reason` because the `mutations` field already documents what was modified in this spawn.
 
@@ -214,7 +211,7 @@ The `with` value is an opaque object to the CMN protocol — its structure is de
       "reason": "Parsing library"
     },
     {
-      "relation": "implements",
+      "relation": "depends_on",
       "uri": "cmn://mydomain.com/b3.8cQnH4xPmZ2vLkJdRt7wNbA9sF3eYgU1hK6pXq5",
       "reason": "Agent-first-data naming conventions"
     }

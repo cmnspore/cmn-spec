@@ -74,7 +74,7 @@ In this example, the publishing tool:
 7. Signs `capsule` → `capsule_signature`
 8. Writes `spore.json` to site's `public/cmn/spore/` directory
 9. Updates `mycelium.json` with new spore entry
-10. Updates `cmn.json` capsule entry with new mycelium hashes
+10. Updates `cmn.json` capsule entry with new mycelium hash
 
 **Resulting `cmn.json`:**
 
@@ -86,7 +86,7 @@ In this example, the publishing tool:
       "uri": "cmn://cmn.dev",
       "key": "ed25519.5XmkQ9vZP8nL3xJdFtR7wNcA6sY2bKgU1eH9pXb4",
       "endpoints": [
-        {"type": "mycelium", "url": "https://cmn.dev/cmn/mycelium/{hash}.json", "hashes": ["b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"]},
+        {"type": "mycelium", "url": "https://cmn.dev/cmn/mycelium/{hash}.json", "hash": "b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"},
         {"type": "spore",    "url": "https://cmn.dev/cmn/spore/{hash}.json"},
         {"type": "archive",  "url": "https://cmn.dev/cmn/archive/{hash}.tar.zst", "format": "tar+zstd"},
         {"type": "taste",    "url": "https://cmn.dev/cmn/taste/{hash}.json"}

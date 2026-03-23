@@ -127,7 +127,7 @@
         "relation": {
           "type": "string",
           "minLength": 1,
-          "description": "Relationship type. Predefined types: spawned_from, absorbed_from, depends_on, follows, implements, inspired_by, related_to. Custom types allowed."
+          "description": "Relationship type. Predefined: spawned_from, absorbed_from, depends_on, follows, extends. Custom types allowed."
         },
         "id": {
           "type": "string",
@@ -137,7 +137,7 @@
         "reason": {
           "type": "string",
           "minLength": 1,
-          "description": "Optional explanation of why this bond exists and what role it plays. Most useful for depends_on, follows, implements, and absorbed_from relations. Typically omitted for spawned_from (use mutations field instead)."
+          "description": "Optional explanation of why this bond exists and what role it plays. Typically omitted for spawned_from (use mutations field instead)."
         },
         "with": {
           "type": "object",

@@ -21,7 +21,7 @@
               {
                 "type": "mycelium",
                 "url": "https://cmn.dev/cmn/mycelium/{hash}.json",
-                "hashes": ["b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"]
+                "hash": "b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"
               },
               {
                 "type": "spore",
@@ -60,7 +60,7 @@
       },
       "expected_primary_uri": "cmn://cmn.dev",
       "expected_primary_key": "ed25519.9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
-      "expected_mycelium_hashes": ["b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"],
+      "expected_mycelium_hash": "b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
       "confirm_keys": [
         "ed25519.9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
         "ed25519.CJfRUQxyonG6B5mnztsNUqxknbFT89DJdrdrzV9F96mU"
@@ -98,7 +98,7 @@
       },
       "expected_primary_uri": "cmn://taste.dev",
       "expected_primary_key": "ed25519.2p3NPZceQ6njbPg8aMFsEynX3Cmv6uCt1XMGHhPcL4AT",
-      "expected_mycelium_hashes": [],
+      "expected_mycelium_hash": null,
       "confirm_keys": ["ed25519.2p3NPZceQ6njbPg8aMFsEynX3Cmv6uCt1XMGHhPcL4AT"],
       "reject_keys": ["ed25519.9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj"],
       "supports_versions": ["v1"],

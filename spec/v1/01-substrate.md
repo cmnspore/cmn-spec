@@ -50,7 +50,7 @@ Using `.well-known` makes CMN discoverable via standard Web infrastructure, comp
       "uri": "cmn://cmn.dev",
       "key": "ed25519.5XmkQ9vZP8nL3xJdFtR7wNcA6sY2bKgU1eH9pXb4",
       "endpoints": [
-        {"type": "mycelium", "url": "https://cmn.dev/cmn/mycelium/{hash}.json", "hashes": ["b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"]},
+        {"type": "mycelium", "url": "https://cmn.dev/cmn/mycelium/{hash}.json", "hash": "b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"},
         {"type": "spore",    "url": "https://cmn.dev/cmn/spore/{hash}.json"},
         {"type": "archive",  "url": "https://cmn.dev/cmn/archive/{hash}.tar.zst", "format": "tar+zstd",
                              "delta_url": "https://cmn.dev/cmn/archive/{hash}.from.{old_hash}.tar.zst"},
@@ -78,7 +78,7 @@ Using `.well-known` makes CMN discoverable via standard Web infrastructure, comp
 
 | Type | Required fields | Description |
 |------|----------------|-------------|
-| `mycelium` | `url`, `hashes` | Mycelium manifest. `hashes` is an array of content hashes for the mycelium shards (typically one element). Used for change detection. `url` template includes `{hash}`. |
+| `mycelium` | `url`, `hash` | Mycelium manifest. `hash` is the primary mycelium content hash — authoritative source for domain metadata and featured spores. Optional `hashes` array for additional overflow shards (large domains). `url` template includes `{hash}`. |
 | `spore` | `url` | Spore manifests. `url` template includes `{hash}`. |
 | `archive` | `url`, `format` | Archive downloads. `url` template includes `{hash}` (the template itself carries the file extension). Optional `delta_url` includes `{hash}` and `{old_hash}`. Multiple archive entries with different formats are allowed. |
 | `taste` | `url` | Taste reports. `url` template includes `{hash}`. |
@@ -144,7 +144,7 @@ Domains MAY rotate their Ed25519 key at any time by updating `cmn.json` with a n
         { "key": "ed25519.OLD_KEY_BASE58", "retired_at_epoch_ms": 1772000000000 }
       ],
       "endpoints": [
-        {"type": "mycelium", "url": "https://example.com/cmn/mycelium/{hash}.json", "hashes": ["b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"]},
+        {"type": "mycelium", "url": "https://example.com/cmn/mycelium/{hash}.json", "hash": "b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"},
         {"type": "spore",    "url": "https://example.com/cmn/spore/{hash}.json"},
         {"type": "archive",  "url": "https://example.com/cmn/archive/{hash}.tar.zst", "format": "tar+zstd"},
         {"type": "taste",    "url": "https://example.com/cmn/taste/{hash}.json"}
@@ -280,7 +280,7 @@ The URI is the **primary key** for all entities:
 **Properties:**
 - Domain identifies the publisher (or taster, for taste reports)
 - Hash ensures content integrity (content-addressed)
-- Use the `hashes` array on the `type: "mycelium"` endpoint in `cmn.json` for change detection
+- Use the `hash` field on the `type: "mycelium"` endpoint in `cmn.json` for change detection
 
 For detailed URI specification, see [06-uri.md](./06-uri.md).
 
@@ -315,7 +315,7 @@ Each capsule entry in `cmn.json` contains a typed endpoint array. Replicators ca
       "uri": "cmn://example.com",
       "key": "ed25519...",
       "endpoints": [
-        {"type": "mycelium", "url": "https://cdn.example.com/cmn/mycelium/{hash}.json", "hashes": ["b3..."]},
+        {"type": "mycelium", "url": "https://cdn.example.com/cmn/mycelium/{hash}.json", "hash": "b3..."},
         {"type": "spore",    "url": "https://cdn.example.com/cmn/spore/{hash}.json"},
         {"type": "archive",  "url": "https://cdn.example.com/cmn/archive/{hash}.tar.zst", "format": "tar+zstd",
                              "delta_url": "https://cdn.example.com/cmn/archive/{hash}.from.{old_hash}.tar.zst"},

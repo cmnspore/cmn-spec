@@ -84,7 +84,7 @@ The identity and discovery layer. Ed25519 keys are published via `cmn.json`, bin
 
 ## Strain
 
-A [Spore](#spore) that defines an enforceable convention. Other spores declare `follows` bonds to adopt the convention. The `follows` bond is a contract — conformance is checkable and reportable via [Taste](#taste). See [05-strain](./05-strain.md).
+A [Spore](#spore) that defines an enforceable convention. Other spores declare `follows` bonds to adopt the convention. Strains themselves declare explicit `extends` bonds to their parent strain family members. Both `follows` and `extends` are non-transitive in the reference strain pattern. See [05-strain](./05-strain.md).
 
 ## Synapse
 

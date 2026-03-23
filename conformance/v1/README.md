@@ -7,7 +7,7 @@ normative core spec chapter plus supporting protocol behaviors:
 - `mycelium`: `02-mycelium` manifest inventory, nutrients, taste catalog
 - `spore`: `03-spore` manifest semantics, distributions, lineage helpers
 - `taste`: `04-taste` base verdict-to-action safety rules
-- `strain`: `05-strain` follows semantics, root-lineage classification, explicit declaration
+- `strain`: `05-strain` extends semantics, root-lineage classification, explicit declaration
 - `uri`: `06-uri` parse/normalization behavior
 - `algorithm_registry`: `07-algorithm-registry` prefix parsing and tree algorithm handling
 - `signature`: Ed25519 verification over canonical JSON bytes

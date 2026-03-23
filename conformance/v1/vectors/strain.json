@@ -1,9 +1,9 @@
 {
   "version": "cmn-conformance-v1",
-  "description": "05-strain vectors for follows semantics, root-lineage strain detection, and explicit declaration of parent strains.",
+  "description": "05-strain vectors for extends semantics, root-lineage strain detection, and explicit declaration of parent strains.",
   "cases": [
     {
-      "id": "strain_definition_follows_root_and_parent",
+      "id": "strain_definition_extends_root_and_parent",
       "spore": {
         "$schema": "https://cmn.dev/schemas/v1/spore.json",
         "capsule": {
@@ -21,11 +21,11 @@
             "updated_at_epoch_ms": 1701000000000,
             "bonds": [
               {
-                "relation": "follows",
+                "relation": "extends",
                 "uri": "cmn://root.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"
               },
               {
-                "relation": "follows",
+                "relation": "extends",
                 "uri": "cmn://strain.dev/b3.Bp7WKXh4Rxx2jyu5taj2aeMorH5YLT4R8DF5rWq7jZjq"
               }
             ],
@@ -47,16 +47,16 @@
       "accepted_root_lineage_uris": [
         "cmn://root.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"
       ],
-      "required_follows": [
+      "required_extends": [
         "cmn://root.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
         "cmn://strain.dev/b3.Bp7WKXh4Rxx2jyu5taj2aeMorH5YLT4R8DF5rWq7jZjq"
       ],
-      "expected_followed_uris": [
+      "expected_extended_uris": [
         "cmn://root.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
         "cmn://strain.dev/b3.Bp7WKXh4Rxx2jyu5taj2aeMorH5YLT4R8DF5rWq7jZjq"
       ],
       "expected_is_strain_definition": true,
-      "expected_follows_all": true
+      "expected_extends_all": true
     },
     {
       "id": "follower_is_not_strain_definition",
@@ -99,41 +99,34 @@
       "accepted_root_lineage_uris": [
         "cmn://root.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"
       ],
-      "required_follows": [
-        "cmn://strain.dev/b3.BMjugPDk6SFJiCLvTTWJtbD6LxSmhw6KBbXQh7Lixv5W",
-        "cmn://strain.dev/b3.7kLmN2pQrS4tUvWx8yZaB3cD5eF6gH9iJ1kL2mN3o"
-      ],
-      "expected_followed_uris": [
+      "required_extends": [
         "cmn://strain.dev/b3.BMjugPDk6SFJiCLvTTWJtbD6LxSmhw6KBbXQh7Lixv5W"
       ],
+      "expected_extended_uris": [],
       "expected_is_strain_definition": false,
-      "expected_follows_all": false
+      "expected_extends_all": false
     },
     {
       "id": "explicit_parent_declaration_required",
       "spore": {
         "$schema": "https://cmn.dev/schemas/v1/spore.json",
         "capsule": {
-          "uri": "cmn://service.dev/b3.7kLmN2pQrS4tUvWx8yZaB3cD5eF6gH9iJ1kL2mN3o",
+          "uri": "cmn://strain.dev/b3.7kLmN2pQrS4tUvWx8yZaB3cD5eF6gH9iJ1kL2mN3o",
           "core": {
-            "id": "service",
-            "name": "service",
-            "domain": "service.dev",
+            "id": "strain-account-pow",
+            "name": "strain-account-pow",
+            "domain": "strain.dev",
             "key": "ed25519.2p3NPZceQ6njbPg8aMFsEynX3Cmv6uCt1XMGHhPcL4AT",
-            "synopsis": "Service with explicit parents",
-            "intent": ["Declares every followed parent explicitly"],
+            "synopsis": "Child strain missing parent extends",
+            "intent": ["Declares root lineage but omits direct parent extends"],
             "license": "MIT",
             "mutations": [],
             "size_bytes": 6144,
             "updated_at_epoch_ms": 1703000000000,
             "bonds": [
               {
-                "relation": "follows",
-                "uri": "cmn://strain.dev/b3.BMjugPDk6SFJiCLvTTWJtbD6LxSmhw6KBbXQh7Lixv5W"
-              },
-              {
-                "relation": "follows",
-                "uri": "cmn://strain.dev/b3.7kLmN2pQrS4tUvWx8yZaB3cD5eF6gH9iJ1kL2mN3o"
+                "relation": "extends",
+                "uri": "cmn://root.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"
               }
             ],
             "tree": {
@@ -151,17 +144,18 @@
         },
         "capsule_signature": "ed25519.2516gWpCkSrPZCyGf9THtxuv6Fq7hEPxdbM5CT6mCvBN2bUMcZ8d6xv7vjAFuBervBpPpBLZUj4i7ZtkSrF1onXt"
       },
-      "accepted_root_lineage_uris": [],
-      "required_follows": [
-        "cmn://strain.dev/b3.BMjugPDk6SFJiCLvTTWJtbD6LxSmhw6KBbXQh7Lixv5W",
-        "cmn://strain.dev/b3.7kLmN2pQrS4tUvWx8yZaB3cD5eF6gH9iJ1kL2mN3o"
+      "accepted_root_lineage_uris": [
+        "cmn://root.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"
       ],
-      "expected_followed_uris": [
-        "cmn://strain.dev/b3.BMjugPDk6SFJiCLvTTWJtbD6LxSmhw6KBbXQh7Lixv5W",
-        "cmn://strain.dev/b3.7kLmN2pQrS4tUvWx8yZaB3cD5eF6gH9iJ1kL2mN3o"
+      "required_extends": [
+        "cmn://root.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
+        "cmn://strain.dev/b3.accountParent"
       ],
-      "expected_is_strain_definition": false,
-      "expected_follows_all": true
+      "expected_extended_uris": [
+        "cmn://root.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"
+      ],
+      "expected_is_strain_definition": true,
+      "expected_extends_all": false
     }
   ]
 }

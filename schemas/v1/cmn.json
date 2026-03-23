@@ -108,7 +108,7 @@
     },
     "endpoint_mycelium": {
       "type": "object",
-      "required": ["type", "url", "hashes"],
+      "required": ["type", "url", "hash"],
       "properties": {
         "type": { "const": "mycelium" },
         "url": {
@@ -116,11 +116,14 @@
           "pattern": "\\{hash\\}",
           "description": "Template URL for fetching mycelium, e.g. https://example.com/cmn/mycelium/{hash}.json"
         },
+        "hash": {
+          "$ref": "#/$defs/content_hash",
+          "description": "Content hash of the primary mycelium manifest. Authoritative source for domain metadata (name, bio, nutrients) and featured spores. Used for change detection and display."
+        },
         "hashes": {
           "type": "array",
           "items": { "$ref": "#/$defs/content_hash" },
-          "minItems": 1,
-          "description": "Content hashes of the current mycelium shards. Each hash points to an independent mycelium chunk. Used for change detection."
+          "description": "Optional additional mycelium shard hashes for large domains. Each points to an overflow shard whose spore list is merged for search and indexing. Metadata from these shards is ignored — only the primary hash is authoritative."
         },
         "protocol_version": { "$ref": "#/$defs/protocol_version" }
       },
