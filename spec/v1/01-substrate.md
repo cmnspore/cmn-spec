@@ -70,8 +70,8 @@ Using `.well-known` makes CMN discoverable via standard Web infrastructure, comp
 | `capsules` | Array | Array of capsule entries. First entry (`capsules[0]`) is the domain's own capsule; additional entries are replicated capsules from other domains. |
 | `capsules[].uri` | String | Domain URI of the capsule origin: `cmn://{origin_domain}`. The first entry (`capsules[0]`) is always this host domain. |
 | `capsules[].key` | String | Ed25519 public key of the entry's origin domain in `{algorithm}.{base58}` format. |
-| `capsules[].previous_keys` | Array | Retired public keys for verifying historical content (see [§1.2.3](#1-2-3-key-rotation)). Empty array if no key rotation has occurred. |
-| `capsules[].endpoints` | Array | Typed array of endpoint definitions. Each entry has a `type` field (`mycelium`, `spore`, `archive`, `taste`, or extension types). Taste-only domains provide only a taste endpoint. |
+| `capsules[].previous_keys` | Array? | Retired public keys for verifying historical content (see [§1.2.3](#1-2-3-key-rotation)). Omit or empty array if no key rotation has occurred. |
+| `capsules[].endpoints` | Array? | Typed array of endpoint definitions. Each entry has a `type` field (`mycelium`, `spore`, `archive`, `taste`, or extension types). Omit when the domain has no endpoints (e.g. taste-only via Synapse). |
 | `capsule_signature` | String | Ed25519 signature of the `capsules` array, verified with `capsules[0].key` (format: `ed25519.<base58>`, JCS canonical). |
 
 **Endpoint types:**

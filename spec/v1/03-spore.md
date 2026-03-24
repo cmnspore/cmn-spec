@@ -65,14 +65,14 @@ The **Spore** is a **Logic Capsule**. It relies on its URI for identity and carr
 | `capsule.core.key` | String | Author's Ed25519 public key (`ed25519.<base58>`). Embedded at release time — enables offline signature verification without fetching `cmn.json`. See [01-substrate §1.2.4](./01-substrate.md#1-2-4-key-trust-model) for trust model. |
 | `capsule.core.synopsis` | String | One-line summary — a visitor reads this alone and understands what the spore does. |
 | `capsule.core.intent` | Array | The spore's reason for being — why it exists, what problem it solves, who it serves. Each array element is a paragraph. Permanent across releases — a reader understands the spore's purpose from intent alone, without reading source code. |
-| `capsule.core.mutations` | Array | What changed in this release relative to the `spawned_from` parent. Each entry is a concise change description — specific, factual, reviewable. Rewritten on each release. |
+| `capsule.core.mutations` | Array? | What changed in this release relative to the `spawned_from` parent. Each entry is a concise change description — specific, factual, reviewable. Rewritten on each release. Omit for initial releases. |
 | `capsule.core.size_bytes` | Number | Total uncompressed source size in bytes — sum of all blob content sizes from tree hash computation. Populated by release tooling, not present in `spore.core.json` draft. |
 | `capsule.core.license` | String | SPDX License Identifier. |
-| `capsule.core.bonds` | Array | List of `{uri, relation, id?, reason?}` (See §2.4 Bond Types). |
+| `capsule.core.bonds` | Array? | List of `{uri, relation, id?, reason?}` (See §2.4 Bond Types). Omit if the spore has no bonds. |
 | `capsule.core.tree` | Object | Tree hash configuration. |
 | `capsule.core.tree.algorithm` | String | Tree hash algorithm (e.g., `blob_tree_blake3_nfc`). |
-| `capsule.core.tree.exclude_names` | Array | Files/patterns to skip (e.g., `[".git"]`). |
-| `capsule.core.tree.follow_rules` | Array | Ignore systems to honor (e.g., `[".gitignore"]`). |
+| `capsule.core.tree.exclude_names` | Array? | Files/patterns to skip (e.g., `[".git"]`). Omit if none. |
+| `capsule.core.tree.follow_rules` | Array? | Ignore systems to honor (e.g., `[".gitignore"]`). Omit if none. |
 | `capsule.core.updated_at_epoch_ms` | Number | Content update timestamp (milliseconds since Unix epoch). Publishers SHOULD derive it from the latest Git commit time for the source tree when available, with max file mtime as fallback. |
 | `capsule.core_signature` | String | Ed25519 signature of `capsule.core` (`ed25519.<base58>`, JCS canonical). |
 
@@ -620,16 +620,16 @@ Each spore source directory includes a `spore.core.json` file containing the aut
 | `id` | String | Opaque publisher-defined identifier (e.g., `cmn-spec`). Useful for mycelium deduplication and tooling. |
 | `version` | String | Human-readable version (e.g., `1.0.0`). Informational only; visitors address by hash. |
 | `key` | String | Author public key. If omitted in `spore.core.json`, the publishing implementation MUST populate it from the current signing domain identity during release. If present, it MUST match that domain identity. |
-| `mutations` | Array | What changed relative to the `spawned_from` parent — describes the mutations applied to derive this spore from its ancestor. |
-| `bonds` | Array | List of `{uri, relation, id?, reason?}` objects (see §2.4). |
+| `mutations` | Array? | What changed relative to the `spawned_from` parent — describes the mutations applied to derive this spore from its ancestor. |
+| `bonds` | Array? | List of `{uri, relation, id?, reason?}` objects (see §2.4). |
 
 **`tree` sub-fields:**
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `algorithm` | String | Tree hash algorithm (e.g., `blob_tree_blake3_nfc`). |
-| `exclude_names` | Array | Directories or files to skip during hashing (e.g., `[".git"]`). |
-| `follow_rules` | Array | Standard ignore file formats to honor (e.g., `[".gitignore"]`). |
+| `exclude_names` | Array? | Directories or files to skip during hashing (e.g., `[".git"]`). |
+| `follow_rules` | Array? | Standard ignore file formats to honor (e.g., `[".gitignore"]`). |
 
 ### 7.2 Complete Example
 

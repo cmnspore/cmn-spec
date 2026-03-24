@@ -59,10 +59,10 @@ The domain entry point (`cmn.json`) is documented in [01-substrate.md](./01-subs
 | `capsule.core.key` | String | Ed25519 public key of the content author. Enables offline signature verification once the key-domain binding is already trusted, without fetching `cmn.json`. |
 | `capsule.core.synopsis` | String | Brief description of the developer/org. |
 | `capsule.core.bio` | String? | Multiline markdown with full details about this domain. |
-| `capsule.core.nutrients` | Array | Nutrient methods, ordered by preference (first = preferred). Empty array if none. See §2.3. |
+| `capsule.core.nutrients` | Array? | Nutrient methods, ordered by preference (first = preferred). Omit if none. See §2.3. |
 | `capsule.core.updated_at_epoch_ms` | Number | Unix timestamp in milliseconds. Used for version ordering. |
-| `capsule.core.spores` | Array | List of published spores. |
-| `capsule.core.tastes` | Array | Published taste reports (`{hash, target_uri}`) for mirror discovery and re-submission. Empty array if none. |
+| `capsule.core.spores` | Array? | List of published spores. Omit if the domain has not published any spores yet. |
+| `capsule.core.tastes` | Array? | Published taste reports (`{hash, target_uri}`) for mirror discovery and re-submission. Omit if none. |
 | `capsule.core_signature` | String | Ed25519 signature of the `core` object (`ed25519.<base58>`, JCS canonical). |
 | `capsule_signature` | String | Ed25519 signature of the `capsule` object (`ed25519.<base58>`, JCS canonical). |
 
