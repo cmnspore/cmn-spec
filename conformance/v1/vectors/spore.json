@@ -37,7 +37,7 @@
             ],
             "tree": {
               "algorithm": "blob_tree_blake3_nfc",
-              "exclude_names": [".git"],
+              "exclude_names": [".git", ".cmn"],
               "follow_rules": [".gitignore"]
             }
           },

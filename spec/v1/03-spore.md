@@ -31,7 +31,7 @@ The **Spore** is a **Logic Capsule**. It relies on its URI for identity and carr
       "bonds": [],
       "tree": {
         "algorithm": "blob_tree_blake3_nfc",
-        "exclude_names": [".git"],
+        "exclude_names": [".git", ".cmn"],
         "follow_rules": [".gitignore"]
       }
     },
@@ -71,7 +71,7 @@ The **Spore** is a **Logic Capsule**. It relies on its URI for identity and carr
 | `capsule.core.bonds` | Array? | List of `{uri, relation, id?, reason?}` (See §2.4 Bond Types). Omit if the spore has no bonds. |
 | `capsule.core.tree` | Object | Tree hash configuration. |
 | `capsule.core.tree.algorithm` | String | Tree hash algorithm (e.g., `blob_tree_blake3_nfc`). |
-| `capsule.core.tree.exclude_names` | Array? | Files/patterns to skip (e.g., `[".git"]`). Omit if none. |
+| `capsule.core.tree.exclude_names` | Array? | Files/patterns to skip (e.g., `[".git", ".cmn"]`). Omit if none. |
 | `capsule.core.tree.follow_rules` | Array? | Ignore systems to honor (e.g., `[".gitignore"]`). Omit if none. |
 | `capsule.core.updated_at_epoch_ms` | Number | Content update timestamp (milliseconds since Unix epoch). Publishers SHOULD derive it from the latest Git commit time for the source tree when available, with max file mtime as fallback. |
 | `capsule.core_signature` | String | Ed25519 signature of `capsule.core` (`ed25519.<base58>`, JCS canonical). |
@@ -380,7 +380,7 @@ Each entry:
 Processing rules:
 - Traverse recursively from the selected root directory.
 - Include regular files and directories.
-- Skip symlinks and special files (device/socket/FIFO).
+- Skip symlinks and special files (device/socket/FIFO). Implementations SHOULD reject symlinks with a clear error at release time rather than silently skipping them.
 - Normalize each filename segment to NFC before tree entry encoding.
 - If two sibling entries normalize to the same NFC name, hashing MUST fail (`filename_nfc_conflict`).
 - Sort sibling entries by normalized-name UTF-8 byte order (ascending, locale-independent).
@@ -628,7 +628,7 @@ Each spore source directory includes a `spore.core.json` file containing the aut
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `algorithm` | String | Tree hash algorithm (e.g., `blob_tree_blake3_nfc`). |
-| `exclude_names` | Array? | Directories or files to skip during hashing (e.g., `[".git"]`). |
+| `exclude_names` | Array? | Directories or files to skip during hashing (e.g., `[".git", ".cmn"]`). |
 | `follow_rules` | Array? | Standard ignore file formats to honor (e.g., `[".gitignore"]`). |
 
 ### 7.2 Complete Example
@@ -656,7 +656,7 @@ Each spore source directory includes a `spore.core.json` file containing the aut
   ],
   "tree": {
     "algorithm": "blob_tree_blake3_nfc",
-    "exclude_names": [".git"],
+    "exclude_names": [".git", ".cmn"],
     "follow_rules": [".gitignore"]
   }
 }

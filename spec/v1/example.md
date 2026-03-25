@@ -50,7 +50,7 @@ This produces `spore.core.json`:
   "bonds": [],
   "tree": {
     "algorithm": "blob_tree_blake3_nfc",
-    "exclude_names": [".git"],
+    "exclude_names": [".git", ".cmn"],
     "follow_rules": [".gitignore"]
   }
 }
@@ -142,7 +142,7 @@ In this example, the publishing tool:
       "bonds": [],
       "tree": {
         "algorithm": "blob_tree_blake3_nfc",
-        "exclude_names": [".git"],
+        "exclude_names": [".git", ".cmn"],
         "follow_rules": [".gitignore"]
       }
     },
@@ -187,7 +187,7 @@ The spore is now discoverable via that service's query endpoints:
 GET /synapse/spore/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2
 
 # By domain
-GET /synapse/mycelium/cmn.dev
+GET /synapse/cmn/cmn.dev
 
 # By search
 GET /synapse/search?q=protocol+specification
@@ -265,32 +265,17 @@ The `spawn` command (checks taste verdict first — blocked if untasted or `toxi
 1. Verifies the spore has been tasted (any verdict except `toxic` and untasted)
 2. Clones from git dist endpoint to local cache bare repo
 3. Clones from cache to `./cmn-spec`
-4. Adds `spawned_from` bond to `spore.core.json`
+4. Saves source manifest to `.cmn/spawned-from/spore.json`
 
-Bob now has a working copy with lineage:
+Bob now has a working copy. `spore.core.json` is unchanged from upstream — the spawn origin is tracked in `.cmn/spawned-from/spore.json`:
 
-```json
-{
-  "$schema": "https://cmn.dev/schemas/v1/spore-core.json",
-  "id": "cmn-spec",
-  "name": "CMN Protocol Specification",
-  "domain": "cmn.dev",
-  "synopsis": "Code Mycelial Network - A sovereign-first protocol for code distribution",
-  "intent": [],
-  "license": "CC0-1.0",
-  "mutations": [],
-  "bonds": [
-    {
-      "relation": "spawned_from",
-      "uri": "cmn://cmn.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"
-    }
-  ],
-  "tree": {
-    "algorithm": "blob_tree_blake3_nfc",
-    "exclude_names": [".git"],
-    "follow_rules": [".gitignore"]
-  }
-}
+```
+cmn-spec/
+├── spec/
+├── spore.core.json    ← Upstream content (unchanged)
+└── .cmn/
+    └── spawned-from/
+        └── spore.json ← Source manifest (local metadata)
 ```
 
 ## 4. Becoming a Publisher (bob.dev)
@@ -331,7 +316,7 @@ Bob's `spore.json` now has a different hash (because core changed) and traces ba
       ],
       "tree": {
         "algorithm": "blob_tree_blake3_nfc",
-        "exclude_names": [".git"],
+        "exclude_names": [".git", ".cmn"],
         "follow_rules": [".gitignore"]
       }
     },

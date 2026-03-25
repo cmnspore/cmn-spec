@@ -2,7 +2,7 @@
   "$schema": "https://cmn.dev/schemas/v1/spore-core.json",
   "id": "cmn-spec",
   "name": "Code Mycelial Network Specification",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "domain": "cmn.dev",
   "key": "ed25519.7BmCWmBb2YeUWR7pmHvwAvi9wRm96VpZsJvZFSTfc2Uu",
   "synopsis": "Code Mycelial Network (CMN) specification — normative documents, JSON schemas, and conformance test vectors for sovereign code distribution",
@@ -12,19 +12,17 @@
   ],
   "license": "CC0-1.0",
   "mutations": [
-    "Make optional array fields non-required in all schemas — previous_keys, endpoints, nutrients, spores, tastes, mutations, bonds, exclude_names, follow_rules can now be omitted (equals empty array), matching OpenAPI/npm conventions",
-    "Remove cmn-spec follows agent-first-data bond — the spec defines its own field names, it does not conform to a naming convention as a contract"
+    "Forbid spawned_from and absorbed_from bonds in spore-core.json schema — historical relations are injected at release time from .cmn/ metadata",
+    "Reject symlinks during tree hashing — implementations SHOULD report a clear error at release time rather than silently skipping",
+    "Add .cmn to exclude_names recommendation alongside .git in all tree configuration examples and schema descriptions",
+    "Spawn no longer modifies spore.core.json — origin tracked in .cmn/spawned-from/ only, simplifying grow and eliminating cross-platform hash inconsistency"
   ],
-  "bonds": [
-    {
-      "relation": "spawned_from",
-      "uri": "cmn://cmn.dev/b3.B8nqp9e9XWnR6AzUGwX96XnbJUoc8nYEE1zyhGA3hJsS"
-    }
-  ],
+  "bonds": [],
   "tree": {
     "algorithm": "blob_tree_blake3_nfc",
     "exclude_names": [
-      ".git"
+      ".git",
+      ".cmn"
     ],
     "follow_rules": [
       ".gitignore"
