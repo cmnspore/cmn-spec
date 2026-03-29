@@ -78,9 +78,9 @@ A taste report is a signed capsule using the [`taste.json`](https://cmn.dev/sche
   "capsule": {
     "uri": "cmn://bob.dev/taste/b3.7tRkW2xPqL9nH4mYeZcFjA5sD8vBwKgU6pXb3",
     "core": {
-      "target_uri": "cmn://cmn.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
       "domain": "bob.dev",
       "key": "ed25519.5XmkQ9vZP8nL3xJdFtR7wNcA6sY2bKgU1eH9pXb4",
+      "target_uri": "cmn://cmn.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
       "verdict": "safe",
       "notes": [],
       "tasted_at_epoch_ms": 1739280000000
@@ -96,9 +96,9 @@ A taste report is a signed capsule using the [`taste.json`](https://cmn.dev/sche
 | Field | Description |
 | :--- | :--- |
 | `capsule.uri` | Content-addressed URI: `cmn://{domain}/taste/{hash}` |
-| `core.target_uri` | Full CMN URI of the target being tasted |
 | `core.domain` | Domain of the publisher submitting the report |
 | `core.key` | Taster's Ed25519 public key embedded in the signed core. Required for shared signed taste capsules; enables offline signature verification once key trust is established. |
+| `core.target_uri` | Full CMN URI of the target being tasted |
 | `core.verdict` | Verdict from the 5-level scale: `sweet`, `fresh`, `safe`, `rotten`, `toxic` (§2) |
 | `core.notes` | Optional findings (e.g., `["eval() in src/init.rs:42"]`) |
 | `core.tasted_at_epoch_ms` | When the evaluation was performed (milliseconds since Unix epoch) |

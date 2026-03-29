@@ -2,7 +2,7 @@
   "$schema": "https://cmn.dev/schemas/v1/spore-core.json",
   "id": "cmn-spec",
   "name": "Code Mycelial Network Specification",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "domain": "cmn.dev",
   "key": "ed25519.7BmCWmBb2YeUWR7pmHvwAvi9wRm96VpZsJvZFSTfc2Uu",
   "synopsis": "Code Mycelial Network (CMN) specification — normative documents, JSON schemas, and conformance test vectors for sovereign code distribution",
@@ -12,10 +12,8 @@
   ],
   "license": "CC0-1.0",
   "mutations": [
-    "Forbid spawned_from and absorbed_from bonds in spore-core.json schema — historical relations are injected at release time from .cmn/ metadata",
-    "Reject symlinks during tree hashing — implementations SHOULD report a clear error at release time rather than silently skipping",
-    "Add .cmn to exclude_names recommendation alongside .git in all tree configuration examples and schema descriptions",
-    "Spawn no longer modifies spore.core.json — origin tracked in .cmn/spawned-from/ only, simplifying grow and eliminating cross-platform hash inconsistency"
+    "Reorder taste schema and spec fields to alphabetical consistency (domain, key before target_uri)",
+    "Move conformance check script to shared project scripts"
   ],
   "bonds": [],
   "tree": {
