@@ -8,7 +8,7 @@ The key words `MUST`, `MUST NOT`, `SHOULD`, `SHOULD NOT`, and `MAY` in this spec
 
 - **New to CMN:** Read [01. Substrate](./01-substrate.md), [02. Mycelium](./02-mycelium.md), and [03. Spore](./03-spore.md) in order.
 - **Publishing from your own domain:** Focus on [02. Mycelium](./02-mycelium.md), [03. Spore](./03-spore.md), and [06. URI](./06-uri.md).
-- **Consuming or verifying foreign spores:** Read [01. Substrate](./01-substrate.md), [04. Taste](./04-taste.md), and [07. Algorithm Registry](./07-algorithm-registry.md).
+- **Consuming or verifying foreign spores:** Read [01. Substrate](./01-substrate.md), [04. Taste](./04-taste.md), [07. Algorithm Registry](./07-algorithm-registry.md), and [08. Security Model](./08-security.md).
 - **Defining conventions:** Start with [05. Strain](./05-strain.md).
 
 ## Document Map
@@ -22,6 +22,7 @@ The key words `MUST`, `MUST NOT`, `SHOULD`, `SHOULD NOT`, and `MAY` in this spec
 ### Taste & Trust
 
 - [04. Taste](./04-taste.md) — Safety evaluation, verdict scale, gate rules
+- [08. Security Model](./08-security.md) — Threat model, key trust, revocation, replay/rollback analysis
 
 ### Shared Strains
 

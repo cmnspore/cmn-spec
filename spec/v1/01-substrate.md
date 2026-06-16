@@ -48,7 +48,9 @@ Using `.well-known` makes CMN discoverable via standard Web infrastructure, comp
   "capsules": [
     {
       "uri": "cmn://cmn.dev",
+      "serial": 1,
       "key": "ed25519.5XmkQ9vZP8nL3xJdFtR7wNcA6sY2bKgU1eH9pXb4",
+      "history": [],
       "endpoints": [
         {"type": "mycelium", "url": "https://cmn.dev/cmn/mycelium/{hash}.json", "hash": "b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"},
         {"type": "spore",    "url": "https://cmn.dev/cmn/spore/{hash}.json"},
@@ -69,9 +71,10 @@ Using `.well-known` makes CMN discoverable via standard Web infrastructure, comp
 | `$schema` | String | Schema URL: `https://cmn.dev/schemas/v1/cmn.json` |
 | `capsules` | Array | Array of capsule entries. First entry (`capsules[0]`) is the domain's own capsule; additional entries are replicated capsules from other domains. |
 | `capsules[].uri` | String | Domain URI of the capsule origin: `cmn://{origin_domain}`. The first entry (`capsules[0]`) is always this host domain. |
+| `capsules[].serial` | Integer | Monotonically increasing domain-state serial. Starts at `1` for newly initialized domains and MUST increase whenever the signed `capsules` array changes. |
 | `capsules[].key` | String | Ed25519 public key of the entry's origin domain in `{algorithm}.{base58}` format. |
-| `capsules[].previous_keys` | Array? | Retired public keys for verifying historical content (see [§1.2.3](#1-2-3-key-rotation)). Omit or empty array if no key rotation has occurred. |
-| `capsules[].endpoints` | Array? | Typed array of endpoint definitions. Each entry has a `type` field (`mycelium`, `spore`, `archive`, `taste`, or extension types). Omit when the domain has no endpoints (e.g. taste-only via Synapse). |
+| `capsules[].history` | Array | Historical public keys with lifecycle status (`retired` or `revoked`; see [§1.2.3](#1-2-3-key-rotation) and [08-security §3](./08-security.md#3-key-rotation-and-revocation)). Use an empty array if no key rotation has occurred. |
+| `capsules[].endpoints` | Array | Typed array of endpoint definitions. Each entry has a `type` field (`mycelium`, `spore`, `archive`, `taste`, or extension types). Use an empty array when the domain has no endpoints. |
 | `capsule_signature` | String | Ed25519 signature of the `capsules` array, verified with `capsules[0].key` (format: `ed25519.<base58>`, JCS canonical). |
 
 **Endpoint types:**
@@ -85,17 +88,21 @@ Using `.well-known` makes CMN discoverable via standard Web infrastructure, comp
 
 The `key` is inside each capsule entry, so the `capsule_signature` covers the key binding — all entries, their public keys, and endpoints are signed together as a single authorized unit.
 
+The top-level `protocol_versions` field and endpoint-level `protocol_version` field are removed in v1 hardening and are invalid in `cmn.json`. Protocol versioning is determined by the `$schema` URL path.
+
 **Note:** Endpoints use a uniform typed-array pattern (same as `dist` in spores and `nutrients` in mycelium). Replicators can add additional capsule entries with different endpoints while preserving the original entry.
 
 **Resolution Flow:**
 
 ```
 1. Download cmn.json
-2. Find endpoint with type "mycelium" in capsules[0].endpoints
-3. Compare mycelium endpoint's hash with cached hash
-4. If same → Skip download (efficient)
-5. If different → Download full mycelium using the endpoint's url template
-6. Resolve spore/archive/taste by finding the matching type in endpoints
+2. Verify `capsule_signature` over the JCS-canonical `capsules` array with `capsules[0].key`
+3. Check local domain-state pinning: serial must not roll back, same-serial digests must match, and key changes must have a valid rotation chain
+4. Find endpoint with type "mycelium" in `capsules[0].endpoints`
+5. Compare mycelium endpoint's hash with cached hash
+6. If same → Skip download (efficient)
+7. If different → Download full mycelium using the endpoint's url template
+8. Resolve spore/archive/taste by finding the matching type in endpoints
 ```
 
 **HTTPS Security Model:**
@@ -131,7 +138,7 @@ Any spore, any source:
 
 #### 1.2.3 Key Rotation
 
-Domains MAY rotate their Ed25519 key at any time by updating `cmn.json` with a new `key` and moving the old key to `previous_keys`:
+Domains MAY rotate their Ed25519 key by publishing a new `cmn.json` serial with a new `key` and a `history` entry in which the old key signs a rotation statement authorizing the successor key:
 
 ```json
 {
@@ -139,9 +146,17 @@ Domains MAY rotate their Ed25519 key at any time by updating `cmn.json` with a n
   "capsules": [
     {
       "uri": "cmn://example.com",
+      "serial": 42,
       "key": "ed25519.NEW_KEY_BASE58",
-      "previous_keys": [
-        { "key": "ed25519.OLD_KEY_BASE58", "retired_at_epoch_ms": 1772000000000 }
+      "history": [
+        {
+          "key": "ed25519.OLD_KEY_BASE58",
+          "status": "retired",
+          "retired_at_epoch_ms": 1772000000000,
+          "replaced_by": "ed25519.NEW_KEY_BASE58",
+          "effective_serial": 42,
+          "rotation_signature": "ed25519.SIGNATURE_BY_OLD_KEY"
+        }
       ],
       "endpoints": [
         {"type": "mycelium", "url": "https://example.com/cmn/mycelium/{hash}.json", "hash": "b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"},
@@ -155,69 +170,56 @@ Domains MAY rotate their Ed25519 key at any time by updating `cmn.json` with a n
 }
 ```
 
+**History states:**
+
+| `status` | Meaning | Verification behavior |
+| :--- | :--- | :--- |
+| `retired` | Normal key rotation. The old private key is no longer used for new releases. | Historical signatures by this key remain valid up to `retired_at_epoch_ms`, if `rotation_signature` verifies. |
+| `revoked` | Compromise or suspected compromise. | Signatures produced at or after `revoked_at_epoch_ms` MUST be rejected. If a verifier cannot determine signing time, it SHOULD reject the key conservatively. |
+
+`retired_at_epoch_ms` records when the key left active use. `replaced_by` and `rotation_signature` are REQUIRED for `retired` entries. `effective_serial` records the `serial` at which the rotation became effective; when omitted, verifiers use the containing capsule's current `serial`. `revoked_at_epoch_ms` is REQUIRED when `status` is `revoked`. A key MUST NOT appear more than once in `history`.
+
+The `rotation_signature` is made by the historical key over the JCS-canonical statement:
+
+```json
+{
+  "purpose": "cmn-key-rotation-v1",
+  "domain": "example.com",
+  "from": "ed25519.OLD_KEY_BASE58",
+  "to": "ed25519.NEW_KEY_BASE58",
+  "effective_serial": 42,
+  "retired_at_epoch_ms": 1772000000000
+}
+```
+
 **Verification of historical content:**
 
-1. Try `capsule.key` first
-2. If signature fails, try each key in `previous_keys` (ordered newest-first)
-3. `retired_at_epoch_ms` indicates when each key was retired
+1. Try `capsule.key` first.
+2. If signature fails, try each `history` entry whose `status` is `retired`, whose `rotation_signature` verifies with that history key, and whose `retired_at_epoch_ms` is not earlier than the content signing time.
+3. If an otherwise matching entry has `status: "revoked"`, apply the revocation rule above instead of trusting it.
+
+**Domain-state pinning:**
+
+Clients SHOULD store, per domain, the highest accepted `capsules[0].serial`, a digest of the signed `capsules` array, and `capsules[0].key`.
+
+1. A lower serial MUST be rejected as `domain_state_rollback`.
+2. The same serial with a different capsules digest MUST be rejected as `domain_state_equivocation`.
+3. A forward jump larger than the implementation threshold (default `1000`) SHOULD be rejected as `domain_state_jump`.
+4. If the current key differs from the pinned key, clients MUST verify a `history` rotation chain from the pinned key to the current key or reject as `domain_key_rotation_unproven`.
 
 **Rotation hardening (implementation guidance):**
 
-1. Keep retired keys in `previous_keys` for at least the key-trust TTL window (default 7 days) plus allowed clock skew, so cached/historical content remains verifiable during rollout.
+1. Keep retired keys in `history` for at least the key-trust TTL window (default 7 days) plus allowed clock skew, so cached/historical content remains verifiable during rollout.
 2. During rotation windows, clients SHOULD prefer live domain confirmation over Synapse witness when available.
 3. If key rotation coincides with other high-risk changes (for example: endpoint template changes + sudden mycelium replacement), clients SHOULD surface a high-risk warning (`key_rotation_review`) before treating new trust as first-class.
 
-**Why this works:** The key is the cryptographic identity; the domain is the name resolution layer. HTTPS authenticates the domain, the domain declares its keys (current and previous) in `cmn.json`, and all content is verified against these keys. CMN domains can rotate keys freely because the domain remains the stable discovery anchor while the key provides cryptographic proof of authorship.
+**Why this works:** The key is the cryptographic identity; the domain is the name resolution layer. HTTPS authenticates initial discovery, the domain declares its current key in `cmn.json`, and each rotation is authorized by the outgoing key. Local serial/digest pinning prevents rollback and same-serial forks after first trust.
 
-**Synapse behavior:** A Synapse node that offers key witness MUST cache `key` alongside every verified mycelium. When verifying historical content (e.g., a replicate whose original domain is offline), it uses that cached key rather than requiring a live fetch.
+Cross-cutting trust policy, Synapse witness behavior, and replay analysis are specified in [08-security](./08-security.md).
 
 #### 1.2.4 Key Trust Model
 
-Spores embed the author's public key in `capsule.core.key`. This makes spores self-describing: any holder can verify `core_signature` without network access. However, signature validity alone does not establish trust — someone could generate a keypair and claim any domain. Trust requires confirming that the key belongs to the claimed domain.
-
-**Trust tiers:**
-
-| Tier | Source | Trust Level | Cached | TTL |
-|------|--------|-------------|--------|-----|
-| Domain confirmation | `cmn.json` from HTTPS domain | First-class | Yes | 7 days (configurable) |
-| Synapse witness | Synapse witness endpoint | Second-class | No | Re-verified each cycle |
-
-**Refresh policies (implementation guidance):**
-
-| Policy | Behavior |
-|--------|----------|
-| `expired` (default) | Use cached trust while TTL is valid. Re-confirm from network only when expired/missing. |
-| `always` | Re-confirm key trust from network every verification cycle. |
-| `offline` | Never refresh from network. Only cached trust entries are accepted. |
-
-In `offline`, a missing/expired key trust cache MUST fail verification (for example: `key_untrusted`) instead of silently downgrading to untrusted network sources.
-
-**Synapse witness fallback policy (implementation guidance):**
-
-| Policy | Behavior when domain confirmation is unavailable |
-|--------|--------------------------------------------------|
-| `allow` (default) | Permit Synapse witness as second-class trust (not cached). |
-| `require_domain` | Do not use Synapse witness for key trust. Verification fails if domain confirmation is unavailable and cache is insufficient. |
-
-**Domain confirmation (first-class trust):**
-- Fetch `cmn.json` from the domain via HTTPS
-- Verify that `capsules[0].key` matches `core.key` (or appears in `previous_keys`)
-- Cache the key-domain binding with a TTL (default: 7 days)
-- Subsequent verifications within the TTL skip the network fetch
-
-**Synapse witness (second-class trust):**
-- When the domain is offline or unreachable, ask a Synapse node for the domain's known public key
-- The Synapse node returns a key it cached during previous successful verification cycles
-- This trust is NOT cached locally — it must be re-verified each time
-- Provides resilience against domain outages without creating permanent trust from a third party
-
-**Offline verification workflow (no network required at verification time):**
-1. Online preflight: verify one spore from each trusted domain, so `core.key ↔ domain` is cached from live `cmn.json`.
-2. Enter offline mode in the client implementation.
-3. Verify spores using embedded `core.key` + cached key trust only.
-4. If cache is expired/missing, fail and require an online refresh cycle.
-
-**Legacy spores:** Spores without `core.key` fall back to the original verification flow: fetch `cmn.json` first, extract the public key, then verify signatures.
+The cross-cutting key trust model applies to spores, mycelium, taste reports, and replicated capsules. It is specified in [08-security §2](./08-security.md#2-key-trust-model).
 
 ### 1.3 Value Formats
 
@@ -227,7 +229,7 @@ In `offline`, a missing/expired key trust cache MUST fail verification (for exam
 - **Public key**: `ed25519.<base58>` (e.g., `ed25519.5XmkQ9vZP8nL3xJdFtR7wNcA6sY2bKgU1eH9pXb4`)
 - **Signature**: `ed25519.<base58>` (e.g., `ed25519.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa23yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2`)
 
-Base58 uses the alphabet `123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz` (no `0`, `O`, `I`, `l`). Hash values encode to ~44 base58 characters; signatures encode to ~88 characters.
+Base58 uses the alphabet `123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz` (no `0`, `O`, `I`, `l`). Leading zero bytes MUST be encoded as leading `1` characters and decoders MUST restore them before length checks. A `b3` hash payload MUST decode to exactly 32 bytes (normally 43-44 Base58 characters); an Ed25519 public key payload MUST decode to exactly 32 bytes; an Ed25519 signature payload MUST decode to exactly 64 bytes (normally 87-88 Base58 characters).
 
 This format is used consistently across URIs, JSON fields, filenames, and API paths.
 
@@ -240,7 +242,7 @@ This format is used consistently across URIs, JSON fields, filenames, and API pa
 
 This ensures identical input produces identical bytes for signing and hashing, regardless of implementation.
 
-**Important:** Unicode NFC normalization is applied to filenames in Merkle tree hashing (see [03-spore §4.6.3](./03-spore.md#4-6-3-unicode-nfc-normalization)), not to JSON string values in JCS.
+**Important:** Unicode NFC normalization is applied to filenames in Merkle tree hashing (see [03-spore §4.6.3](./03-spore.md#4-6-3-unicode-nfc-normalization)), not to JSON string values in JCS. Producers SHOULD emit human-entered core strings in NFC for readability, but verifiers MUST NOT normalize JSON string values before JCS. Two visually similar JSON strings with different Unicode codepoint sequences are different signed bytes and can produce different hashes.
 
 ### 1.4 Distributed Architecture
 
@@ -450,16 +452,7 @@ The protocol version lives in the `$schema` URL path, for example `https://cmn.d
 
 ### 6.1 Version Negotiation
 
-Domains MUST declare supported protocol versions in `cmn.json`:
-
-```json
-{
-  "protocol_versions": ["v1"],
-  "capsules": [...]
-}
-```
-
-Consumers SHOULD use the highest mutually-supported version.
+There is no separate `cmn.json` protocol-version negotiation field. The removed top-level `protocol_versions` field and endpoint-level `protocol_version` field MUST be rejected rather than treated as deprecated compatibility hints. Consumers select behavior from the `$schema` URL they validate against.
 
 ### 6.2 Migration Rules
 

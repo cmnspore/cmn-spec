@@ -84,7 +84,9 @@ In this example, the publishing tool:
   "capsules": [
     {
       "uri": "cmn://cmn.dev",
+      "serial": 1,
       "key": "ed25519.5XmkQ9vZP8nL3xJdFtR7wNcA6sY2bKgU1eH9pXb4",
+      "history": [],
       "endpoints": [
         {"type": "mycelium", "url": "https://cmn.dev/cmn/mycelium/{hash}.json", "hash": "b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"},
         {"type": "spore",    "url": "https://cmn.dev/cmn/spore/{hash}.json"},
@@ -172,12 +174,13 @@ When the receiving service gets the pulse (or discovers cmn.dev via crawl):
 1. Receive POST /synapse/pulse with signed spore manifest
 2. Parse $schema → determine type (spore)
 3. Extract domain from capsule.core.domain → "cmn.dev"
-4. Fetch cmn.json from cmn.dev → get key from capsules[0].key
-5. Verify core_signature against public key ✓
-6. Verify capsule_signature against public key ✓
-7. Store spore manifest in database
-8. Update lineage graph (no bonds → root node)
-9. Return: {"code": "ok", "result": {"action": "indexed"}}
+4. Fetch cmn.json from cmn.dev → verify capsule_signature and domain-state serial pin
+5. Get current key from capsules[0].key
+6. Verify core_signature against public key ✓
+7. Verify capsule_signature against public key ✓
+8. Store spore manifest in database
+9. Update lineage graph (no bonds → root node)
+10. Return: {"code": "ok", "result": {"action": "indexed"}}
 ```
 
 The spore is now discoverable via that service's query endpoints:
@@ -233,11 +236,11 @@ The `sense` command resolves the URI without downloading:
 
 ```
 1. Parse URI → domain: cmn.dev, hash: b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2
-2. Fetch https://cmn.dev/.well-known/cmn.json → public key + endpoints from capsules[0]
+2. Fetch https://cmn.dev/.well-known/cmn.json → verify signature + serial pin, read public key + endpoints from capsules[0]
 3. Fetch spore manifest via spore endpoint template
-5. Verify core_signature ✓
-6. Verify capsule_signature ✓
-7. Display metadata
+4. Verify core_signature ✓
+5. Verify capsule_signature ✓
+6. Display metadata
 ```
 
 ### 3.3 Taste

@@ -102,7 +102,7 @@ Each `dist` entry MUST be one of:
 - `{ "type": "ipfs", "cid": "<cid-or-uri>" }`
 - `{ "type": "<extension>", ... }` (protocol extension entry)
 
-The first three are built-in v1 entries. `archive` uses endpoint indirection: the spore's hash is resolved through the `type: "archive"` endpoint's `url` template in `cmn.json` (e.g., `https://example.com/cmn/archive/{hash}.tar.zst`). No `filename` field is needed — the URL template includes the file extension. For future protocols, use the extension form with a `type` field (for example, `{ "type": "s3", "url": "..." }`). Consumers that do not understand an extension `type` MAY skip that entry and continue trying other `dist` entries.
+The first three are built-in v1 entries. `archive` uses endpoint indirection: the spore's hash is resolved through the `type: "archive"` endpoint's `url` template in `cmn.json` (e.g., `https://example.com/cmn/archive/{hash}.tar.zst`). No `filename` field is needed — the URL template includes the file extension. For future protocols, use the extension form with a `type` field (for example, `{ "type": "s3", "url": "..." }`). Consumers that do not understand an extension `type` MAY skip that entry and continue trying other `dist` entries. When a replicator rewrites `dist`, it MUST preserve the origin-signed capsule it received (or at least its `dist` array and `capsule_signature`) in local audit metadata, so visitors can inspect how distribution information changed across replicas.
 
 **Incremental delivery note:**
 - `type=archive` is a full content snapshot transport.
@@ -334,7 +334,7 @@ The `capsule.core.tree` field controls the tree hash algorithm and which files a
 **`algorithm` (String):**
 - Declares the tree hash algorithm used (e.g., `blob_tree_blake3_nfc`)
 - Components: `blob_tree` (object format) + `blake3` (hash function) + `nfc` (Unicode normalization)
-- Visitors that don't recognize the algorithm cannot verify the content hash
+- Visitors that do not recognize the algorithm MUST reject the content because they cannot verify the content hash
 - Registered algorithm names are listed in [07-algorithm-registry](./07-algorithm-registry.md)
 
 **`exclude_names` (Name List):**
@@ -383,6 +383,8 @@ Processing rules:
 - Skip symlinks and special files (device/socket/FIFO). Implementations SHOULD reject symlinks with a clear error at release time rather than silently skipping them.
 - Normalize each filename segment to NFC before tree entry encoding.
 - If two sibling entries normalize to the same NFC name, hashing MUST fail (`filename_nfc_conflict`).
+- Before hashing or materializing a directory, validate all immediate sibling path components with CMN's portable filename rule (§4.6.3). If two siblings have the same portable filename key, verification/materialization MUST fail (`filename_portable_conflict`).
+- File-vs-directory conflicts are included: `foo` and `FOO/bar` conflict at the same parent because the parent has sibling components `foo` and `FOO`.
 - Sort sibling entries by normalized-name UTF-8 byte order (ascending, locale-independent).
 
 **Entry Format:**
@@ -391,10 +393,10 @@ Processing rules:
   - `100644`: Regular file
   - `100755`: Executable file
   - `40000`: Directory
-- On non-Unix platforms without executable bit semantics, regular files use `100644`.
+- Archive distributors MUST preserve executable file mode (`100755`) in archive metadata, and archive consumers on Unix-like platforms MUST restore it on disk. On non-Unix platforms without executable bit semantics, regular files use `100644`.
 - Hash is **binary** (32 bytes for BLAKE3)
 
-#### 4.6.3 Unicode NFC Normalization
+#### 4.6.3 Unicode NFC Normalization and Portable Filename Validation
 
 > **See also:** §4.6.4 below for a complete step-by-step worked example.
 
@@ -404,6 +406,21 @@ To prevent hash mismatches between operating systems (macOS NFD vs. Linux NFC):
 
 - **Rule**: All filenames MUST be converted to Unicode Normalization Form C (NFC) before hashing
 - **Example**: `á.txt` (combining character) → `á.txt` (precomposed character)
+
+To prevent content that is valid on Git/Linux from collapsing on common macOS/Windows filesystem configurations, CMN also defines a deterministic portable sibling-collision rule. This is a CMN portability rule, not an exact emulator for APFS, HFS+, NTFS, Git `core.ignoreCase`, or locale-specific casing.
+
+For each path component `name` in a directory:
+
+```
+portable_filename_key(name) = NFD(full Unicode case fold(NFD(name)))
+```
+
+Processing requirements:
+
+- Implementations MUST compute this key for every immediate sibling path component after applying `exclude_names` and `follow_rules`.
+- If two siblings in the same parent directory have the same key, verification/materialization MUST fail with `filename_portable_conflict`.
+- The check applies to all component kinds, including file-vs-directory conflicts such as `foo` and `FOO/bar`.
+- This rule uses canonical normalization plus full Unicode case folding. It MUST NOT use compatibility case folding such as `NFKC_Casefold`; compatibility glyphs such as fullwidth `Ａ` vs. `A`, or `①` vs. `1`, are not rejected by this rule alone.
 
 #### 4.6.4 Worked Example
 
@@ -471,6 +488,7 @@ This root hash is the **tree_hash** used in §4.3 (URI hash calculation).
 - File mode `100644` for regular files, `100755` for executables, `40000` for directories
 - Hash bytes are **binary** (32 bytes), not hex — same as Git's tree entry format
 - Filenames are NFC-normalized before sorting (§4.6.3)
+- Portable sibling filename conflicts are rejected before accepting content (§4.6.3)
 - The `tree.exclude_names` and `tree.follow_rules` filters are applied before hashing — excluded files never appear in the tree
 
 #### 4.6.5 Binary Format Reference
@@ -509,7 +527,7 @@ This section provides the definitive byte-level encoding for cross-implementatio
 
 `hash = BLAKE3(entire tree from offset 0)`
 
-**Root hash output:** Base58-encode the 32-byte root tree hash → `b3.<base58>`
+**Root hash output:** Base58-encode the 32-byte root tree hash using the Bitcoin Base58 alphabet with leading zero bytes encoded as leading `1` characters → `b3.<base58>`. For a 32-byte BLAKE3 digest the payload is 43 or 44 Base58 characters, except degenerate all-zero style test vectors can be shorter only if the decoded byte length remains exactly 32.
 
 **Implementor notes:**
 - On non-Unix platforms without executable bit semantics, all regular files use mode `100644`
@@ -528,7 +546,7 @@ Hash verification only proves "content has not been tampered with" — it does n
 
 ### 5.3 Key Trust Verification
 
-Spores with `capsule.core.key` support offline signature verification. The embedded key allows clients to verify `core_signature` locally, then establish trust in the key through the tiered model described in [01-substrate §1.2.4](./01-substrate.md#1-2-4-key-trust-model).
+Spores with `capsule.core.key` support offline signature verification. The embedded key allows clients to verify `core_signature` locally, then establish trust in the key through the tiered model described in [08-security §2](./08-security.md#2-key-trust-model).
 
 For replicates (where `core.domain` differs from the URI domain), `core.key` is the original author's key — `core_signature` verifies against it. The `capsule_signature` still verifies against the hosting domain's key from `cmn.json`.
 
@@ -558,7 +576,7 @@ A **replicate** hosts the same spore with different `dist` URLs:
 
 **Verification:**
 1. If `core.key` is present, verify `core_signature` against `core.key` locally; otherwise fetch `cmn.dev` public key from `cmn.json`
-2. Establish key trust via domain confirmation or Synapse witness (see [01-substrate §1.2.4](./01-substrate.md#1-2-4-key-trust-model))
+2. Establish key trust via domain confirmation or Synapse witness (see [08-security §2](./08-security.md#2-key-trust-model))
 3. URI hash matches (`b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2`)
 4. `domain ≠ URI domain` → This is a replicate hosted by `replicate.dev`
 5. `capsule_signature` verifies against `replicate.dev` public key

@@ -109,6 +109,12 @@ A taste report is a signed capsule using the [`taste.json`](https://cmn.dev/sche
 - `cmn://{domain}/{hash}` (Spore)
 - `cmn://{domain}/mycelium/{hash}` (Mycelium)
 
+### 4.2.1 Latest Verdict Selection
+
+Taste reports are immutable and content-addressed. A taster corrects or changes a verdict by publishing a new taste report for the same `target_uri`.
+
+When a client has multiple valid taste reports from the same taster identity (`core.domain` + `core.key`) for the same `core.target_uri`, it MUST use the report with the greatest `core.tasted_at_epoch_ms` as that taster's effective verdict. Older reports remain valid historical records but MUST NOT override the latest report.
+
 ### 4.3 Two-Layer Signature
 
 Taste capsules use the same two-layer signature scheme as spores and mycelium:

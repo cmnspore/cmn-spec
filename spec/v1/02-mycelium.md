@@ -261,10 +261,7 @@ Publishing implementations MAY send a Pulse notification to one or more Synapse 
 
 **Content Correction:** If a publisher needs to fix a mistake (e.g., typo in synopsis, wrong spore entry), they MUST increment `updated_at_epoch_ms` before re-signing and re-publishing. This produces a new hash and a newer timestamp, which a Synapse node can accept as an ordinary update. The monotonic timestamp requirement ensures that corrections are unambiguous and prevents conflicting edits.
 
-**Protection Against:**
-- Replay attacks (old versions rejected by timestamp)
-- Version rollback (timestamp must strictly increase)
-- Ambiguous edits (same timestamp, different hash = rejected)
+Replay and rollback analysis for these timestamp rules is covered in [08-security §4](./08-security.md#4-replay-and-rollback-analysis).
 
 ## 9. Example
 

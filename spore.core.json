@@ -2,7 +2,7 @@
   "$schema": "https://cmn.dev/schemas/v1/spore-core.json",
   "id": "cmn-spec",
   "name": "Code Mycelial Network Specification",
-  "version": "1.1.6",
+  "version": "1.2.0",
   "domain": "cmn.dev",
   "key": "ed25519.7BmCWmBb2YeUWR7pmHvwAvi9wRm96VpZsJvZFSTfc2Uu",
   "synopsis": "Code Mycelial Network (CMN) specification — normative documents, JSON schemas, and conformance test vectors for sovereign code distribution",
@@ -12,8 +12,17 @@
   ],
   "license": "CC0-1.0",
   "mutations": [
-    "Reorder taste schema and spec fields to alphabetical consistency (domain, key before target_uri)",
-    "Move conformance check script to shared project scripts"
+    "Add chapter 08-security as the single reference for CMN trust policy and threat analysis — threat-model table, key-trust model, key rotation/revocation, replay/rollback analysis, and credentials/local-state guidance — cross-referencing mechanism details back to the protocol chapters",
+    "Add domain-state pinning to cmn.json: a monotonically increasing per-capsule serial, with clients pinning serial/digest/key per domain and rejecting rollback (domain_state_rollback), same-serial forks (domain_state_equivocation), implausible serial jumps (domain_state_jump), and unproven key changes (domain_key_rotation_unproven)",
+    "Replace the previous_keys rotation model with an authenticated history array supporting both retirement and revocation — retired entries carry a rotation_signature from the outgoing key over a canonical cmn-key-rotation-v1 statement authorizing the successor; revoked entries reject signatures made at or after revoked_at_epoch_ms",
+    "Remove protocol-version negotiation from cmn.json — drop top-level protocol_versions and endpoint-level protocol_version and require implementations to reject them rather than treat them as compatibility hints; protocol version is determined solely by the $schema URL",
+    "Harden parsing and schema validation — additionalProperties:false across cmn.json and its sub-objects, require unknown fields to be ignored and never influence security decisions, and recommend rejecting duplicate object keys to avoid parser-differential attacks",
+    "Define a deterministic portable filename collision rule (filename_portable_conflict) using NFD plus full Unicode case folding so content valid on Git/Linux but collapsing on macOS/Windows filesystems is rejected on publish and receive, including file-vs-directory sibling conflicts",
+    "Add algorithm-registry downgrade resistance — a deprecation lifecycle with deprecated_after, a MUST-reject rule for unknown/deprecated algorithms, future algorithm-naming guidance, and a post-quantum migration position keeping Ed25519 as the v1 signature algorithm",
+    "Tighten Base58/hash validation — leading-zero bytes encoded as leading 1, exact decoded-length checks (32-byte hash/key, 64-byte signature), and semantic hash constraints in the URI grammar so only active registry prefixes with valid payload lengths are accepted",
+    "Clarify the JCS/NFC boundary — verifiers MUST NOT NFC-normalize JSON string values before canonicalization; NFC applies only to filenames in tree hashing",
+    "Add taste latest-verdict selection — for one taster identity and target_uri, clients use the report with the greatest tasted_at_epoch_ms as the effective verdict",
+    "Preserve executable file mode across archives (producers keep 100755, Unix consumers restore it and include mode in tree-hash verification) and require replicators that rewrite dist to retain the origin-signed capsule/dist in local audit metadata"
   ],
   "bonds": [],
   "tree": {

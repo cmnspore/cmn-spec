@@ -193,6 +193,12 @@ BASE58CHAR    = %x31-39               ; 1-9
 - Total `domain` length MUST be at most 253 characters
 - No trailing dot after the final label
 
+**Semantic hash constraints** (not expressible in ABNF):
+- The ABNF above defines URI syntax only. A grammar-valid `hash` is not necessarily acceptable.
+- Implementations MUST accept only active hash algorithm prefixes from the [Algorithm Registry](./07-algorithm-registry.md).
+- Implementations MUST validate the algorithm-specific payload encoding and decoded length defined by the registry entry.
+- For the current active `b3` hash algorithm, `base58_value` MUST decode to exactly 32 bytes. Hashes with unknown prefixes or invalid algorithm-specific payloads MUST be rejected.
+
 ## 5. Domain Rules
 
 ### 5.1 Valid Domain Names
