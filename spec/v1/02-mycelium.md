@@ -7,7 +7,7 @@ The **Mycelium** is a **Site Descriptor**. It represents a developer or organiza
 The domain entry point (`cmn.json`) is documented in [01-substrate.md](./01-substrate.md#1-2-1-domain-entry-point-cmn-json). This document covers the full mycelium manifest that contains the complete site metadata.
 
 **Location:** Defined by the `type: "mycelium"` endpoint in `cmn.json` (e.g., `https://cmn.dev/cmn/mycelium/{hash}.json`)
-**Schema:** `https://cmn.dev/schemas/v1/mycelium.json`
+**Schema:** `https://cmn.dev/schemas/v1/mycelium.json` (hostname non-authoritative — see [01-substrate §6](./01-substrate.md#6-protocol-versioning))
 **Size:** ~1-10 KB
 
 ```json
@@ -50,7 +50,7 @@ The domain entry point (`cmn.json`) is documented in [01-substrate.md](./01-subs
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `$schema` | String | Schema URL: `https://cmn.dev/schemas/v1/mycelium.json` |
+| `$schema` | String | `https://cmn.dev/schemas/v1/mycelium.json` (hostname non-authoritative — see [01-substrate §6](./01-substrate.md#6-protocol-versioning)). |
 | `capsule` | Object | The capsule container. |
 | `capsule.uri` | String | Mycelium URI: `cmn://{domain}/mycelium/{hash}` |
 | `capsule.core` | Object | The mycelium content. |
@@ -124,7 +124,7 @@ The `type` field is an open string — any value is valid. New payment networks 
 
 ## 3. Schema Validation
 
-**Schema URL:** `https://cmn.dev/schemas/v1/mycelium.json`
+**Schema:** `https://cmn.dev/schemas/v1/mycelium.json` (see [01-substrate §6](./01-substrate.md#6-protocol-versioning))
 
 Validators SHOULD embed schemas for offline validation. No network fetch should be required.
 

@@ -3,7 +3,7 @@
 The **Spore** is a **Logic Capsule**. It relies on its URI for identity and carries the logic DNA.
 
 **Location:** Defined by the `type: "spore"` endpoint in `cmn.json` (e.g., `https://cmn.dev/cmn/spore/{hash}.json`)
-**Schema:** `https://cmn.dev/schemas/v1/spore.json`
+**Schema:** `https://cmn.dev/schemas/v1/spore.json` (hostname non-authoritative — see [01-substrate §6](./01-substrate.md#6-protocol-versioning))
 
 ## 1. The `spore.json` Manifest
 
@@ -50,7 +50,7 @@ The **Spore** is a **Logic Capsule**. It relies on its URI for identity and carr
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `$schema` | String | Schema URL: `https://cmn.dev/schemas/v1/spore.json` |
+| `$schema` | String | `https://cmn.dev/schemas/v1/spore.json` (hostname non-authoritative — see [01-substrate §6](./01-substrate.md#6-protocol-versioning)). |
 | `capsule` | Object | The capsule container. |
 | `capsule.uri` | String | Full URI: `cmn://{domain}/{hash}` |
 | `capsule_signature` | String | Ed25519 signature of entire `capsule` object (`ed25519.<base58>`, JCS canonical). |
@@ -616,7 +616,7 @@ A **spawn** creates a new spore derived from an existing one (new domain, modifi
 
 Each spore source directory includes a `spore.core.json` file containing the author-maintained portion of `capsule.core` (§2.2). It does not contain `dist`, signatures, `size_bytes`, or `updated_at_epoch_ms` — those are computed and added during release. Publishing implementations also populate `key` during release if absent from the draft.
 
-**Schema:** `https://cmn.dev/schemas/v1/spore-core.json`
+**Schema:** `https://cmn.dev/schemas/v1/spore-core.json` (hostname non-authoritative — see [01-substrate §6](./01-substrate.md#6-protocol-versioning))
 
 ### 7.1 Field Reference
 

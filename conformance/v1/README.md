@@ -17,8 +17,8 @@ normative core spec chapter plus supporting protocol behaviors:
 - `bond_traversal`: BFS/DFS graph traversal over spore bonds
 - `taste_gating`: Operation-specific gating for spawn/grow/absorb/bond
 
-`overview.md`, `glossary.md`, and `example.md` are non-normative/supporting
-documents, so they are not represented as standalone vector files.
+`glossary.md` and `example.md` are non-normative/supporting documents, so they
+are not represented as standalone vector files.
 
 The authoritative machine-readable entry point is [`manifest.json`](./manifest.json). Every JSON file in [`vectors/`](./vectors/) MUST be listed there.
 

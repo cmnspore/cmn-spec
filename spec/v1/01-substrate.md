@@ -19,6 +19,14 @@ The **Code Mycelial Network (CMN)** is a **domain-sovereign, distributed network
 - Each domain publishes its own Ed25519 public key via `cmn.json`
 - A single keypair MAY be shared across multiple domains (operational choice, not protocol requirement)
 
+**Why a domain, not a bare public key (design rationale):**
+
+A bare Ed25519 public key would be a more *portable* identity, but public keys can be generated for free in unlimited quantity. That gives an indexing and discovery layer no way to resist sybil and spam floods — a free identity costs an attacker nothing to mint a million of. (Nostr, which uses bare-pubkey identities, retrofitted NIP-05 — domain verification — for exactly this reason.) CMN deliberately anchors identity to a domain: registration and renewal impose a continuous, real-world cost and an accountable owner. **This is the network's primary sybil-resistance mechanism, and it is a deliberate trade-off, not inherited centralization.**
+
+The cost of the trade-off is that identity **continuity** is tied to domain control. If a domain lapses, is seized, or is transferred, a fresh client can no longer establish *first-class* trust in that identity, and the new owner of the name becomes the authority for it. This is intentional: stop paying the sovereignty cost, stop holding the sovereign name.
+
+This does **not** weaken the **verifiability** of already-published content. Spores, mycelium, and taste reports are content-addressed and embed `core.key`, so any holder of the bytes (from a mirror or a Synapse cache) can still verify signatures and hashes without the origin domain being reachable. What a dead or transferred domain forfeits is *first-class trust bootstrapping for new clients* and *discovery* — not the integrity of content already in hand, and not the validity of signatures a client has already pinned.
+
 ### 1.2 Trust Anchor: Domain Identity
 
 **Domain ownership is verified through the domain entry point:**
@@ -40,7 +48,7 @@ CMN follows the **`.well-known` URI** standard ([RFC 8615](https://datatracker.i
 
 Using `.well-known` makes CMN discoverable via standard Web infrastructure, compatible with existing HTTP servers, CDNs, and caching layers without special configuration.
 
-**Schema:** `https://cmn.dev/schemas/v1/cmn.json`
+**Schema:** `https://cmn.dev/schemas/v1/cmn.json` (the hostname is not authoritative — see [§6](#6-protocol-versioning))
 
 ```json
 {
@@ -68,7 +76,7 @@ Using `.well-known` makes CMN discoverable via standard Web infrastructure, comp
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `$schema` | String | Schema URL: `https://cmn.dev/schemas/v1/cmn.json` |
+| `$schema` | String | `https://cmn.dev/schemas/v1/cmn.json` (hostname non-authoritative — see [§6](#6-protocol-versioning)). |
 | `capsules` | Array | Array of capsule entries. First entry (`capsules[0]`) is the domain's own capsule; additional entries are replicated capsules from other domains. |
 | `capsules[].uri` | String | Domain URI of the capsule origin: `cmn://{origin_domain}`. The first entry (`capsules[0]`) is always this host domain. |
 | `capsules[].serial` | Integer | Monotonically increasing domain-state serial. Starts at `1` for newly initialized domains and MUST increase whenever the signed `capsules` array changes. |
@@ -88,7 +96,7 @@ Using `.well-known` makes CMN discoverable via standard Web infrastructure, comp
 
 The `key` is inside each capsule entry, so the `capsule_signature` covers the key binding — all entries, their public keys, and endpoints are signed together as a single authorized unit.
 
-The top-level `protocol_versions` field and endpoint-level `protocol_version` field are removed in v1 hardening and are invalid in `cmn.json`. Protocol versioning is determined by the `$schema` URL path.
+The top-level `protocol_versions` field and endpoint-level `protocol_version` field are removed in v1 hardening and are invalid in `cmn.json`. Protocol version is determined by the version segment of each payload's `$schema` URL path (`/v1/`), never by a hostname — see [§6](#6-protocol-versioning).
 
 **Note:** Endpoints use a uniform typed-array pattern (same as `dist` in spores and `nutrients` in mycelium). Replicators can add additional capsule entries with different endpoints while preserving the original entry.
 
@@ -448,13 +456,31 @@ Spore A
 
 ## 6. Protocol Versioning
 
-The protocol version lives in the `$schema` URL path, for example `https://cmn.dev/schemas/v1/spore.json`. All CMN schema documents for a given release share the same version segment. This repository publishes the corresponding prose and conformance bundles under matching versioned paths such as `spec/v1/` and `conformance/v1/`.
+### 6.1 Version Identity
 
-### 6.1 Version Negotiation
+A CMN protocol version is identified by the **version segment of the `$schema` URL path**, not by its hostname. Each document type's canonical `$schema` is:
 
-There is no separate `cmn.json` protocol-version negotiation field. The removed top-level `protocol_versions` field and endpoint-level `protocol_version` field MUST be rejected rather than treated as deprecated compatibility hints. Consumers select behavior from the `$schema` URL they validate against.
+| Document | `$schema` |
+| :--- | :--- |
+| Domain entry (`cmn.json`) | `https://cmn.dev/schemas/v1/cmn.json` |
+| Mycelium | `https://cmn.dev/schemas/v1/mycelium.json` |
+| Spore | `https://cmn.dev/schemas/v1/spore.json` |
+| Spore draft (`spore.core.json`) | `https://cmn.dev/schemas/v1/spore-core.json` |
+| Taste | `https://cmn.dev/schemas/v1/taste.json` |
 
-### 6.2 Migration Rules
+**The hostname is not authoritative.** The protocol version is the `/v1/` path segment and the document type is the filename. The hostname — `cmn.dev` or any mirror — MUST NOT influence trust, version selection, or validation. `cmn.dev` is the reference publisher of the schema bundle, not the owner of the protocol namespace: anyone may mirror the schema documents at any host, and a payload's protocol version does not depend on which host (if any) served them. Implementations match `$schema` by version segment plus document-type filename and accept any hostname (the reference implementation also accepts a bare `…/v1/<type>.json` suffix from any host). This rule — not the literal string — is what keeps the protocol namespace from being bound to a single domain's continued existence, the same intent by which a spore binds identity to a content hash (§2.1) and treats endpoints as swappable locations (§3).
+
+**The URL doubles as a real location, on purpose.** Unlike a content hash (whose identity is deliberately location-free), the `$schema` value is also the resolvable address where the JSON Schema is published, so standard JSON tooling — editors, CI validators — can fetch and validate against it without special configuration. Implementations MUST NOT depend on that fetch for correctness: schema validation MUST use an embedded copy of the schema (see each chapter's schema-validation section). The fetchable URL is a tooling affordance; the normative version-determination rule above is what carries protocol meaning.
+
+### 6.2 Version Determination
+
+Consumers select behavior from the **version segment** (`/v1/`) of the `$schema` URL path, never from its hostname. A payload whose `$schema` does not resolve — by version segment and document-type filename — to a recognized version and document type MUST be rejected.
+
+A future major version is a new path segment (for example `https://cmn.dev/schemas/v2/spore.json`), introduced through the deprecation lifecycle in [07-algorithm-registry §4.1](./07-algorithm-registry.md#4-1-algorithm-migration).
+
+There is no separate `cmn.json` protocol-version negotiation field. The removed top-level `protocol_versions` field and endpoint-level `protocol_version` field MUST be rejected rather than treated as deprecated compatibility hints.
+
+### 6.3 Migration Rules
 
 1. **Major version** (`v1` → `v2`): Breaking changes. Consumers MUST support both versions during a transition period of at least 12 months. Domains SHOULD publish under both versions concurrently.
 2. **Minor additions**: New optional fields within the same major version. Consumers MUST ignore unknown fields. Producers MUST NOT require consumers to understand new optional fields for correct operation.
