@@ -6,6 +6,10 @@ Core terms used across the CMN Protocol Specification, alphabetically ordered.
 
 Merge code from another [Spore](#spore) into your working copy. Creates an `absorbed_from` [bond](./03-spore.md#2-4-bond-types).
 
+## blob_tree_blake3_nfc
+
+The default tree hashing algorithm for spores. Rather than a recursive per-directory Merkle tree, `blob_tree_blake3_nfc` constructs a flat, deterministic, NUL-separated manifest of all files sorted in Unicode NFC codepoint order. Each file entry records its normalized relative path, permissions, and BLAKE3 content blob hash, and the overall tree hash is computed over this canonical flat manifest. See [03-spore §4.6](./03-spore.md#4-6-tree-hash-merkle-tree) and [07-algorithm-registry](./07-algorithm-registry.md).
+
 ## Bond
 
 Fetch bonded spores referenced in `spore.core.json`, making them locally available. Each bond goes through the [Taste](#taste) gate before being fetched. Excludes `spawned_from` (handled by [Grow](#grow)) and `absorbed_from` (historical — merge already done).
@@ -42,9 +46,9 @@ Prepare a [Spore](#spore) draft for release by creating or updating `spore.core.
 
 JSON Canonicalization Scheme ([RFC 8785](https://datatracker.ietf.org/doc/html/rfc8785)). Deterministic JSON serialization used for all signatures and hashes. See [01-substrate §1.3](./01-substrate.md#1-3-value-formats).
 
-## Merkle Tree
+## Merkle Tree / Tree Hash
 
-Git-like content-addressing structure using BLAKE3. Files become blobs, directories become trees. The root hash represents the full release tree content. See [03-spore §4.6](./03-spore.md#4-6-tree-hash-merkle-tree).
+Content-addressing structure representing full release tree content using BLAKE3. While serving the role of a Merkle root, the protocol's active tree algorithm ([blob_tree_blake3_nfc](#blob-tree-blake3-nfc)) uses a flat NUL-separated manifest sorted by Unicode NFC codepoints rather than recursive per-directory Merkle tree nodes. See [03-spore §4.6](./03-spore.md#4-6-tree-hash-merkle-tree).
 
 ## Mycelium
 

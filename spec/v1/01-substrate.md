@@ -206,6 +206,14 @@ The `rotation_signature` is made by the historical key over the JCS-canonical st
 2. If signature fails, try each `history` entry whose `status` is `retired`, whose `rotation_signature` verifies with that history key, and whose `retired_at_epoch_ms` is not earlier than the content signing time.
 3. If an otherwise matching entry has `status: "revoked"`, apply the revocation rule above instead of trusting it.
 
+For signed spore and mycelium content, signing time is the signed core's
+`updated_at_epoch_ms` (taste uses `tasted_at_epoch_ms`). A verifier that cannot
+determine this time MUST reject a retired key. The retirement cutoff is inclusive:
+content declared at or before the cutoff can be accepted with a verified rotation.
+This is a signer-declared timestamp, not proof of when the signature was created;
+a holder of a retired private key can backdate content. Compromise requires
+`revoked`, rather than relying on retirement to prevent forgery.
+
 **Domain-state pinning:**
 
 Clients SHOULD store, per domain, the highest accepted `capsules[0].serial`, a digest of the signed `capsules` array, and `capsules[0].key`.
@@ -453,6 +461,35 @@ Spore A
 - May prune unbonded or low-reputation spores
 - Popular spores (in inventories or bond chains) are preserved
 - Mycelial structure keeps important content alive
+
+### 5.3 Canonical Serialization and Formatting
+
+While cryptographic signing and hash verification strictly use **JSON Canonicalization Scheme (JCS, RFC 8785)** with lexicographical key sorting and no whitespace, published human-readable files (`cmn.json`, `mycelium.json`, `spore.json`, `spore.core.json`, `taste.json`) apply deterministic **priority key ordering** before falling back to lexicographical sorting for unlisted keys.
+
+#### Priority Key Ordering Tables
+
+| Document / Object | Scope | Priority Key Order |
+| :--- | :--- | :--- |
+| **CMN Root (`CMN_KEY_ORDER`)** | `cmn.json` root | `$schema`, `capsules`, `capsule_signature` |
+| **CMN Capsule Entry** | `/capsules[]` | `uri`, `serial`, `key`, `history`, `endpoints` |
+| **CMN Endpoint** | `/capsules[]/endpoints[]` | `type`, `url`, `hash`, `hashes`, `format`, `delta_url` |
+| **Key History Entry** | `/capsules[]/history[]` | `key`, `status`, `retired_at_epoch_ms`, `replaced_by`, `effective_serial`, `rotation_signature`, `revoked_at_epoch_ms` |
+| **Spore Document** | `spore.json` root | `$schema`, `capsule`, `capsule_signature` |
+| **Spore Capsule (`CAPSULE_KEY_ORDER`)** | `capsule` | `uri`, `core`, `core_signature`, `dist` |
+| **Spore Core (`SPORE_CORE_KEY_ORDER`)** | `spore.core.json` or `capsule.core` | `$schema`, `id`, `name`, `version`, `domain`, `key`, `synopsis`, `intent`, `license`, `mutations`, `size_bytes`, `updated_at_epoch_ms`, `bonds`, `tree` |
+| **Spore Tree** | `tree` | `algorithm`, `exclude_names`, `follow_rules` |
+| **Bond (`BOND_KEY_ORDER`)** | `bonds[]` | `relation`, `uri`, `id`, `reason`, `with` |
+| **Mycelium Document** | `mycelium.json` root | `$schema`, `capsule`, `capsule_signature` |
+| **Mycelium Capsule** | `capsule` | `uri`, `core`, `core_signature` |
+| **Mycelium Core (`MYCELIUM_CORE_KEY_ORDER`)** | `capsule.core` | `domain`, `key`, `name`, `synopsis`, `bio`, `nutrients`, `updated_at_epoch_ms`, `spores`, `tastes` |
+| **Mycelium Spore Entry** | `capsule.core.spores[]` | `id`, `hash`, `name`, `synopsis` |
+| **Mycelium Taste Entry** | `capsule.core.tastes[]` | `hash`, `target_uri` |
+| **Nutrient Entry** | `nutrients[]` | `type`, `address`, `recipient`, `url`, `label`, `chain_id`, `token`, `asset_id` |
+| **Taste Document** | `taste.json` root | `$schema`, `capsule`, `capsule_signature` |
+| **Taste Capsule** | `capsule` | `uri`, `core`, `core_signature` |
+| **Taste Core (`TASTE_CORE_KEY_ORDER`)** | `capsule.core` | `domain`, `key`, `target_uri`, `verdict`, `notes`, `tasted_at_epoch_ms` |
+
+Any keys not explicitly specified in these priority tables are sorted alphabetically (lexicographical fallback) after the priority keys.
 
 ## 6. Protocol Versioning
 

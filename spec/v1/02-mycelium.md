@@ -56,7 +56,7 @@ The domain entry point (`cmn.json`) is documented in [01-substrate.md](./01-subs
 | `capsule.core` | Object | The mycelium content. |
 | `capsule.core.name` | String | Developer or organization name. |
 | `capsule.core.domain` | String | The domain (e.g., `cmn.dev`). |
-| `capsule.core.key` | String | Ed25519 public key of the content author. Enables offline signature verification once the key-domain binding is already trusted, without fetching `cmn.json`. |
+| `capsule.core.key` | String? | Optional Ed25519 public key of the content author (`ed25519.<base58>`). Optional in drafts; populated at release time to enable offline signature verification once the key-domain binding is already trusted, without fetching `cmn.json`. |
 | `capsule.core.synopsis` | String | Brief description of the developer/org. |
 | `capsule.core.bio` | String? | Multiline markdown with full details about this domain. |
 | `capsule.core.nutrients` | Array? | Nutrient methods, ordered by preference (first = preferred). Omit if none. See §2.3. |
@@ -149,7 +149,7 @@ The hash in `capsule.uri` is calculated from `core` + `core_signature`:
 1. Construct hash input: `{"core": <core>, "core_signature": "<signature>"}`
 2. Serialize hash input using JCS
 3. Hash with BLAKE3 → `b3.<base58>`
-4. The mycelium URI is `cmn://{domain}/mycelium/{hash}` (the hash is also stored in `cmn.json` as an element of the `hashes` array on the `type: "mycelium"` endpoint for change detection)
+4. The mycelium URI is `cmn://{domain}/mycelium/{hash}`. The primary shard hash is stored in the `hash` field on the `type: "mycelium"` endpoint in `cmn.json`; additional overflow shard hashes are stored in its optional `hashes` array.
 
 **Key Properties:**
 - Changing any core field (name, synopsis, spores) changes the hash
@@ -183,7 +183,7 @@ All signatures and hashes use JCS (see [01-substrate §1.3](./01-substrate.md#1-
 5. Build `capsule` with uri, core, core_signature
 6. Sign capsule → `capsule_signature`
 7. Save full mycelium to `/cmn/mycelium/{hash}.json`
-8. Generate cmn.json capsule entry with endpoints (including `type: "mycelium"` with `hashes` array)
+8. Generate cmn.json capsule entry with endpoints (including `type: "mycelium"` with the primary `hash` and optional overflow `hashes` array)
 9. Sign cmn.json capsules array → `capsule_signature`
 10. Save to `cmn.json`
 
@@ -194,8 +194,10 @@ site_root/
 ├── .well-known/
 │   └── cmn.json                                          # Domain entry point (~150 bytes)
 └── cmn/
-    └── mycelium/
-        └── b3.3yMR7vZQ9hL2x...pTa2.json                  # Current version
+    ├── mycelium/
+    │   └── b3.3yMR7vZQ9hL2x...pTa2.json                  # Current version
+    └── spore/
+        └── b3.3yMR7vZQ9hL2x...pTa2.json                  # Spore manifest (tree hash: b_t_b3_nfc.<hash>)
 ```
 
 **Benefits:**
@@ -207,20 +209,20 @@ site_root/
 
 ### 7.1 Hash Lookup and Sharding
 
-The mycelium endpoint in `cmn.json` carries a `hashes` array. Each hash points to a mycelium shard. Most domains use a single shard.
+The mycelium endpoint in `cmn.json` carries the required primary `hash` and an optional `hashes` array of overflow shards. Most domains use only the primary shard and omit `hashes`.
 
 **Shard rules:**
 - Every shard is a valid `mycelium.json` (same schema, independently signed). All shards MUST have identical `name`, `domain`, `key`, and `synopsis` values — a mismatch is an error.
-- `hashes[0]` is authoritative for `nutrients` and `bio`. Other shards set `nutrients: []` and omit `bio`.
+- The primary `hash` is authoritative for domain metadata, including `nutrients` and `bio`. Overflow shards set `nutrients: []` and omit `bio`; clients do not replace primary metadata with overflow metadata.
 - Each spore appears in exactly one shard. Clients merge `core.spores` from all shards.
-- Clients compare cached `hashes` against the live array — only changed hashes need re-fetching.
+- Clients compare the cached primary `hash` and overflow `hashes` together against the live endpoint. Only changed hashes need re-fetching.
 
 ### 7.2 Mycelium Resolution
 
 When fetching the full mycelium content:
 
 Find the `type: "mycelium"` endpoint in `capsules[0].endpoints`:
-- For each hash in the `hashes` array, replace `{hash}` in the endpoint's `url` template
+- Fetch the primary `hash` first, replacing `{hash}` in the endpoint's `url` template, then fetch each hash in the optional `hashes` array exactly once
 - Example:
   - Hash = `b3.3yMR7vZQ9hL2x...pTa2`
   - URL = `https://cmn.dev/cmn/mycelium/b3.3yMR7vZQ9hL2x...pTa2.json`
@@ -266,15 +268,18 @@ Replay and rollback analysis for these timestamp rules is covered in [08-securit
 ## 9. Example
 
 **Entry Point (`cmn.json`):**
+The complete documents below illustrate schema structure. Their keys and signatures are placeholders, so they are not cryptographic verification fixtures.
 ```json
 {
   "$schema": "https://cmn.dev/schemas/v1/cmn.json",
   "capsules": [
     {
       "uri": "cmn://cmn.dev",
+      "serial": 1,
       "key": "ed25519.5XmkQ9vZP8nL3xJdFtR7wNcA6sY2bKgU1eH9pXb4",
+      "history": [],
       "endpoints": [
-        {"type": "mycelium", "url": "https://cmn.dev/cmn/mycelium/{hash}.json", "hashes": ["b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"]},
+        {"type": "mycelium", "url": "https://cmn.dev/cmn/mycelium/{hash}.json", "hash": "b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"},
         {"type": "spore",    "url": "https://cmn.dev/cmn/spore/{hash}.json"},
         {"type": "archive",  "url": "https://cmn.dev/cmn/archive/{hash}.tar.zst", "format": "tar+zstd"},
         {"type": "taste",    "url": "https://cmn.dev/cmn/taste/{hash}.json"}
@@ -285,7 +290,7 @@ Replay and rollback analysis for these timestamp rules is covered in [08-securit
 }
 ```
 
-**Client resolution:** Find the `type: "mycelium"` endpoint, iterate its `hashes` array, replace `{hash}` in the `url` template for each → fetch each mycelium shard.
+**Client resolution:** Find the `type: "mycelium"` endpoint, fetch its primary `hash`, then any optional overflow `hashes`, using the `url` template. Preserve primary metadata and merge all shard spore lists.
 
 **Full (`/cmn/mycelium/b3.3yMR7vZQ9hL2x...pTa2.json`):**
 ```json

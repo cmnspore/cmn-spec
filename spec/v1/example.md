@@ -180,7 +180,7 @@ When the receiving service gets the pulse (or discovers cmn.dev via crawl):
 7. Verify capsule_signature against public key ✓
 8. Store spore manifest in database
 9. Update lineage graph (no bonds → root node)
-10. Return: {"code": "ok", "result": {"action": "indexed"}}
+10. Return: {"kind": "result", "result": {"action": "indexed"}}
 ```
 
 The spore is now discoverable via that service's query endpoints:
@@ -208,7 +208,7 @@ hypha search "protocol specification" --synapse https://synapse.cmn.dev
 
 ```json
 {
-  "code": "ok",
+  "kind": "result",
   "result": {
     "query": {
       "text": "protocol specification"

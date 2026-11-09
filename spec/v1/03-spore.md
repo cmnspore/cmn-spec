@@ -62,7 +62,7 @@ The **Spore** is a **Logic Capsule**. It relies on its URI for identity and carr
 | `capsule.core` | Object | Immutable metadata (part of spore identity). |
 | `capsule.core.name` | String | Human-readable display name (e.g., `CMN Protocol Specification`). |
 | `capsule.core.domain` | String | The domain of the publisher (e.g., `cmn.dev`). |
-| `capsule.core.key` | String | Author's Ed25519 public key (`ed25519.<base58>`). Embedded at release time — enables offline signature verification without fetching `cmn.json`. See [01-substrate §1.2.4](./01-substrate.md#1-2-4-key-trust-model) for trust model. |
+| `capsule.core.key` | String | Author's Ed25519 public key (`ed25519.<base58>`). Optional in `spore.core.json` drafts (populated by release tooling from the publisher identity if omitted). In published `spore.json`, optional when `capsule.domain == capsule.core.domain` (the hosting domain's key in `cmn.json` is authoritative), but required for replicates where `capsule.domain != capsule.core.domain` so clients can verify `core_signature` offline. See [01-substrate §1.2.4](./01-substrate.md#1-2-4-key-trust-model) for trust model. |
 | `capsule.core.synopsis` | String | One-line summary — a visitor reads this alone and understands what the spore does. |
 | `capsule.core.intent` | Array | The spore's reason for being — why it exists, what problem it solves, who it serves. Each array element is a paragraph. Permanent across releases — a reader understands the spore's purpose from intent alone, without reading source code. |
 | `capsule.core.mutations` | Array? | What changed in this release relative to the `spawned_from` parent. Each entry is a concise change description — specific, factual, reviewable. Rewritten on each release. Omit for initial releases. |
@@ -157,8 +157,8 @@ Bonds declare relationships to other spores:
 
 **Predefined relation types:**
 
-- **`spawned_from`** — Source this spore was cloned/derived from. The URI includes the hash of the version spawned from.
-- **`absorbed_from`** — Source that was merged into this spore. Unlike `spawned_from`, represents a one-time merge. A spore can have multiple `absorbed_from` bonds.
+- **`spawned_from`** — Source this spore was cloned/derived from. The URI includes the hash of the version spawned from. Injected automatically by release tooling from `.cmn/` spawn state; authoring `spawned_from` directly in `spore.core.json` is forbidden by the schema.
+- **`absorbed_from`** — Source that was merged into this spore. Unlike `spawned_from`, represents a one-time merge. A spore can have multiple `absorbed_from` bonds, and `absorbed_from` may be authored directly in `spore.core.json`.
 - **`depends_on`** — Runtime, build, or protocol dependency required by this spore.
 - **`follows`** — Convention or standard that this spore adheres to (e.g., data format conventions, API guidelines).
 - **`extends`** — Direct parent convention or family relationship declared by this spore. Used for explicit, non-transitive hierarchy between strain definitions. See [05-strain](./05-strain.md).
@@ -637,9 +637,9 @@ Each spore source directory includes a `spore.core.json` file containing the aut
 | :--- | :--- | :--- |
 | `id` | String | Opaque publisher-defined identifier (e.g., `cmn-spec`). Useful for mycelium deduplication and tooling. |
 | `version` | String | Human-readable version (e.g., `1.0.0`). Informational only; visitors address by hash. |
-| `key` | String | Author public key. If omitted in `spore.core.json`, the publishing implementation MUST populate it from the current signing domain identity during release. If present, it MUST match that domain identity. |
+| `key` | String | Author public key (`ed25519.<base58>`). Optional in `spore.core.json` drafts — if omitted, the publishing implementation MUST populate it from the current signing domain identity during release. If present, it MUST match that domain identity. |
 | `mutations` | Array? | What changed relative to the `spawned_from` parent — describes the mutations applied to derive this spore from its ancestor. |
-| `bonds` | Array? | List of `{uri, relation, id?, reason?}` objects (see §2.4). |
+| `bonds` | Array? | List of `{uri, relation, id?, reason?, with?}` objects (see §2.4). Authoring `spawned_from` directly in `spore.core.json` is forbidden by the schema (it is injected during release); `absorbed_from`, `depends_on`, `follows`, `extends`, and custom relations are permitted. |
 
 **`tree` sub-fields:**
 
@@ -668,8 +668,9 @@ Each spore source directory includes a `spore.core.json` file containing the aut
   ],
   "bonds": [
     {
-      "relation": "spawned_from",
-      "uri": "cmn://cmn.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2"
+      "relation": "absorbed_from",
+      "uri": "cmn://cmn.dev/b3.3yMR7vZQ9hL2xKJdFtN8wPcB6sY1mXgU4eH5pTa2",
+      "reason": "Merged core specification and schemas from upstream cmn-spec"
     }
   ],
   "tree": {
